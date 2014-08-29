@@ -4,7 +4,7 @@
  * Input:   a, b, n
  * Output:  estimate of area between x-axis, x = a, x = b, and graph of f(x)
  *          using the trapezoidal rule with n trapezoids or using
- *          Simpson's rule with n intervals.
+ *          Simpson's rule with n subintervals.
  *
  * Compile: gcc -g -Wall -o hw1 hw1.c
  * Run:     ./hw1
@@ -45,7 +45,7 @@ int main(void) {
       a, b, area);
       
    printf("\nUsing Simpson's Rule:\n");
-   printf("With n = %d intervals, our estimate\n", n);
+   printf("With n = %d subintervals, our estimate\n", n);
    printf("of the area from %f to %f = %.15f\n",
       a, b, area_s);
 
@@ -85,7 +85,7 @@ double Trap(double a, double b, int n, double h) {
  * Purpose:      Estimate area using Simpson's rule
  * Input args:   a: left endpoint
  *               b: right endpoint
- *               n: number of intervals
+ *               n: number of subintervals
  * Return val:   Simpson's rule estimate of area between x-axis,
  *               x = a, x = b, and graph of f(x)
  */
