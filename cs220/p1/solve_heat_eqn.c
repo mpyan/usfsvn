@@ -11,7 +11,7 @@
  *
  *           ./solve_heat_eqn < data
  *
- *			 (where "data" is the file containing the inputs)
+ *           (where "data" is the file containing the inputs)
  *
  * Input:    m, the number of grid points in the x-direction is m+1
  *           n, the number of grid points in the t-direction is n+1
