@@ -1,4 +1,4 @@
-/* File:     ll_sorted
+/* File:     hw4
  *
  * Purpose:  Implement a sorted linked list with ops Insert 
  *           and Print.
@@ -8,8 +8,8 @@
  *
  * Output:   Results of operations.
  *
- * Compile:  gcc -g -Wall -o lls ll_sorted.c
- * Run:      ./lls
+ * Compile:  gcc -g -Wall -o hw4 hw4.c
+ * Run:      ./hw4
  *
  * Notes:
  *    1.  Repeated values are allowed in the list
@@ -73,11 +73,21 @@ struct list_node_s* Insert(struct list_node_s* head_p, int val) {
       curr_p = curr_p->next_p;
    }
 
-   // Create new node
+   /* Create new node */
    temp_p = malloc(sizeof(struct list_node_s));
    temp_p->data = val;
    temp_p->next_p = curr_p;
-   pred_p->next_p = temp_p;
+
+   /* -------------------------------------------------------
+    * Note:
+    * The missing case was when the list pointed to by head_p
+    * had no pre-existing nodes (the list is blank)
+    * prior to Insert.
+    */
+   if (pred_p != NULL) /* If there are pre-existing nodes */
+      pred_p->next_p = temp_p;
+   else
+      head_p = temp_p; /* If there are no pre-existing nodes */
 
    return head_p;
 }  /* Insert */
