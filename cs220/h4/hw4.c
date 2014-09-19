@@ -15,7 +15,6 @@
  *    1.  Repeated values are allowed in the list
  *    2.  Program assumes an int will be entered when prompted
  *        for one.
- *    3.  The insert function is missing some code ...
  */
 #include <stdio.h>
 #include <stdlib.h>
