@@ -33,7 +33,7 @@ struct list_s {
 
 int  Member(struct list_s* list_p, int val);
 void Insert(struct list_s* list_p, char* val);
-void Delete(struct list_s* list_p, int val);
+void Delete(struct list_s* list_p, char* val);
 void Print(struct list_s* list_p);
 void Free_list(struct list_s* list_p); 
 char Get_command(void);
@@ -69,11 +69,11 @@ int main(void) {
          //    else
          //       printf("%d is not in the list\n", value);
          //    break;
-         // case 'd':
-         // case 'D':
-         //    value = Get_value();
-         //    Delete(&list, value);
-         //    break;
+         case 'd':
+         case 'D':
+            Get_value(value);
+            Delete(&list, value);
+            break;
          case 'f':
          case 'F':
             Free_list(&list);
@@ -118,19 +118,19 @@ int Member(struct list_s* list_p, int val) {
  *             val:    value to be deleted
  * Return val: Possibly updated pointer to head of list
  */
-void Delete(struct list_s* list_p, int val) {
+void Delete(struct list_s* list_p, char* val) {
    struct list_node_s* curr_p = list_p->h_p;
 
    /* Find node containing val */
    while (curr_p != NULL)
-      if (curr_p->data == val) 
+      if (strcmp(curr_p->data, val) == 0) 
          break;
       else { // curr_p->data != val 
          curr_p = curr_p->next_p;
       }
 
    if (curr_p == NULL)
-      printf("%d is not in the list\n", val);
+      printf("%s is not in the list\n", val);
 
    else {
       if (curr_p->pred_p == NULL) /* first in the list */
@@ -144,7 +144,6 @@ void Delete(struct list_s* list_p, int val) {
       free(curr_p);
    }
 
-   // return head_p;
 }  /* Delete */
 
 
