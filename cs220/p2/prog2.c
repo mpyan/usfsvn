@@ -18,9 +18,10 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct list_node_s {
-   int    data;
+   char*    data;
    struct list_node_s* pred_p;
    struct list_node_s* next_p;
 };
@@ -31,17 +32,18 @@ struct list_s {
 };
 
 int  Member(struct list_s* list_p, int val);
-void Insert(struct list_s* list_p, int val);
+void Insert(struct list_s* list_p, char* val);
 void Delete(struct list_s* list_p, int val);
 void Print(struct list_s* list_p);
 void Free_list(struct list_s* list_p); 
 char Get_command(void);
-int  Get_value(void);
+void Get_value(char* dest);
 
 /*-----------------------------------------------------------------*/
 int main(void) {
    char command;
-   int  value;
+   // int  value;
+   char value[99];
    struct list_s list;
    list.h_p = NULL;
    list.t_p = NULL; 
@@ -52,26 +54,26 @@ int main(void) {
       switch (command) {
          case 'i': 
          case 'I': 
-            value = Get_value();
+            Get_value(value);
             Insert(&list, value);
             break;
          case 'p':
          case 'P':
             Print(&list);
             break;
-         case 'm': 
-         case 'M':
-            value = Get_value();
-            if (Member(&list, value))
-               printf("%d is in the list\n", value);
-            else
-               printf("%d is not in the list\n", value);
-            break;
-         case 'd':
-         case 'D':
-            value = Get_value();
-            Delete(&list, value);
-            break;
+         // case 'm': 
+         // case 'M':
+         //    value = Get_value();
+         //    if (Member(&list, value))
+         //       printf("%d is in the list\n", value);
+         //    else
+         //       printf("%d is not in the list\n", value);
+         //    break;
+         // case 'd':
+         // case 'D':
+         //    value = Get_value();
+         //    Delete(&list, value);
+         //    break;
          case 'f':
          case 'F':
             Free_list(&list);
@@ -153,11 +155,13 @@ void Delete(struct list_s* list_p, int val) {
  *             val:  new value to be inserted
  * Return val: Pointer to head of list
  */
-void Insert(struct list_s* list_p, int val) {
+void Insert(struct list_s* list_p, char* val) {
    struct list_node_s* temp_p;
 
    temp_p = malloc(sizeof(struct list_node_s));
-   temp_p->data = val;
+   // temp_p->data = val;
+   temp_p->data = malloc(99*sizeof(char));
+   strcpy(temp_p->data, val);
 
    /* initialize values of next_p and pred_p members */
    temp_p->next_p = NULL;
@@ -184,7 +188,7 @@ void Print(struct list_s* list_p) {
 
    printf("list = ");
    while (curr_p != NULL) {
-      printf("%d ", curr_p->data);
+      printf("%s ", curr_p->data);
       curr_p = curr_p->next_p;
    }  
    printf("\n");
@@ -234,10 +238,7 @@ char Get_command(void) {
  * Return value:  the next int in stdin
  * Note:       Behavior unpredictable if an int isn't entered
  */
-int  Get_value(void) {
-   int val;
-
+void Get_value(char* dest) {
    printf("Please enter a value:  ");
-   scanf("%d", &val);
-   return val;
+   scanf("%s", dest);
 }  /* Get_value */
