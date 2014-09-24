@@ -34,7 +34,7 @@ int  Member(struct list_s* list_p, int val);
 void Insert(struct list_s* list_p, int val);
 void Delete(struct list_s* list_p, int val);
 void Print(struct list_s* list_p);
-struct list_node_s* Free_list(struct list_node_s* head_p); 
+void Free_list(struct list_s* list_p); 
 char Get_command(void);
 int  Get_value(void);
 
@@ -42,7 +42,6 @@ int  Get_value(void);
 int main(void) {
    char command;
    int  value;
-   struct list_node_s* head_p = NULL; /* can get rid of this later */
    struct list_s list;
    list.h_p = NULL;
    list.t_p = NULL; 
@@ -75,7 +74,7 @@ int main(void) {
             break;
          case 'f':
          case 'F':
-            head_p = Free_list(head_p);
+            Free_list(&list);
             break;
          default:
             printf("There is no %c command\n", command);
@@ -84,7 +83,7 @@ int main(void) {
       command = Get_command();
    }
 
-   head_p = Free_list(head_p);
+   Free_list(&list);
 
    return 0;
 }  /* main */
@@ -200,19 +199,19 @@ void Print(struct list_s* list_p) {
  * Note:        head_p is set to NULL on completion, indicating
  *              list is empty.
  */
-struct list_node_s* Free_list(struct list_node_s* head_p) {
+void Free_list(struct list_s* list_p) {
    struct list_node_s* curr_p;
    struct list_node_s* temp_p;
 
-   curr_p = head_p;
+   curr_p = list_p->h_p;
    while (curr_p != NULL) {
       temp_p = curr_p;
       curr_p = curr_p->next_p;
       free(temp_p);     
    }
 
-   head_p = NULL;
-   return head_p;
+   list_p->h_p = NULL;
+   list_p->t_p = NULL;
 }  /* Free_list */
 
 /*-----------------------------------------------------------------
