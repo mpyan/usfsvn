@@ -30,7 +30,7 @@ struct list_s {
    struct list_node_s* t_p;
 };
 
-int  Member(struct list_node_s* head_p, int val);
+int  Member(struct list_s* list_p, int val);
 void Insert(struct list_s* list_p, int val);
 struct list_node_s* Delete(struct list_node_s* head_p, int val);
 void Print(struct list_s* list_p);
@@ -63,7 +63,7 @@ int main(void) {
          case 'm': 
          case 'M':
             value = Get_value();
-            if (Member(head_p, value))
+            if (Member(&list, value))
                printf("%d is in the list\n", value);
             else
                printf("%d is not in the list\n", value);
@@ -97,8 +97,8 @@ int main(void) {
  *              val:  value to search for
  * Return val:  1 if val is in list, 0 otherwise
  */
-int Member(struct list_node_s* head_p, int val) {
-   struct list_node_s* curr_p = head_p;
+int Member(struct list_s* list_p, int val) {
+   struct list_node_s* curr_p = list_p->h_p;
 
    while (curr_p != NULL) {
       if (curr_p->data == val)
