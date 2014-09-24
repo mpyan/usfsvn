@@ -32,7 +32,7 @@ struct list_s {
 
 int  Member(struct list_s* list_p, int val);
 void Insert(struct list_s* list_p, int val);
-struct list_node_s* Delete(struct list_node_s* head_p, int val);
+void Delete(struct list_s* list_p, int val);
 void Print(struct list_s* list_p);
 struct list_node_s* Free_list(struct list_node_s* head_p); 
 char Get_command(void);
@@ -71,7 +71,7 @@ int main(void) {
          case 'd':
          case 'D':
             value = Get_value();
-            head_p = Delete(head_p, value);
+            Delete(&list, value);
             break;
          case 'f':
          case 'F':
@@ -117,31 +117,33 @@ int Member(struct list_s* list_p, int val) {
  *             val:    value to be deleted
  * Return val: Possibly updated pointer to head of list
  */
-struct list_node_s* Delete(struct list_node_s* head_p, int val) {
-   struct list_node_s* curr_p = head_p;
-   struct list_node_s* pred_p = NULL;  /* Points to predecessor of curr_p or
-                                        * NULL when curr_p is first node */
+void Delete(struct list_s* list_p, int val) {
+   struct list_node_s* curr_p = list_p->h_p;
 
-   /* Find node containing val and predecessor of this node */
+   /* Find node containing val */
    while (curr_p != NULL)
       if (curr_p->data == val) 
          break;
       else { // curr_p->data != val 
-         pred_p = curr_p;
          curr_p = curr_p->next_p;
       }
 
    if (curr_p == NULL)
       printf("%d is not in the list\n", val);
-   else if (pred_p == NULL) {
-      head_p = curr_p->next_p;
-      free(curr_p);
-   } else {
-      pred_p->next_p = curr_p->next_p;
+
+   else {
+      if (curr_p->pred_p == NULL) /* first in the list */
+         list_p->h_p = curr_p->next_p;
+      if (curr_p->next_p == NULL) /* last in the list */
+         list_p->t_p = curr_p->pred_p;
+      if (curr_p->next_p != NULL) /* has successor */
+         curr_p->next_p->pred_p = curr_p->pred_p;
+      if (curr_p->pred_p != NULL) /* has predecessor */
+         curr_p->pred_p->next_p = curr_p->next_p;
       free(curr_p);
    }
 
-   return head_p;
+   // return head_p;
 }  /* Delete */
 
 
