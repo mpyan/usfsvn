@@ -21,7 +21,7 @@ const int MAX_STRING = 100;
 
 int main(void) {
    char       greeting[MAX_STRING];
-   int        my_rank, p, q;
+   int        my_rank, p;
 
    /* Start up MPI */
    MPI_Init(NULL, NULL);
