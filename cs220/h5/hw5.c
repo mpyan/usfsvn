@@ -1,15 +1,16 @@
-/* File:       mpi_hello0.c
+/* File:       hw5.c
  *
  * Purpose:    A "hello,world" program that uses MPI
  *
- * Compile:    mpicc -g -Wall -o mpi_hello0 mpi_hello0.c
- * Run:        mpiexec -n<number of processes> ./mpi_hello0
+ * Compile:    mpicc -g -Wall -o hw5 hw5.c
+ * Run:        mpiexec -n <number of processes> ./hw5
  *
  * Input:      None
  * Output:     A greeting from each process
  *
- * Algorithm:  Each process sends a message to process 0,
- *             which prints the messages it has received,
+ * Algorithm:  Each process sends a message to the
+ *             next higher ranked process,
+ *             which prints the message it has received,
  *             as well as its own message.
  */
 #include <stdio.h>
@@ -38,7 +39,7 @@ int main(void) {
       int source = (my_rank + p - 1) % p;
       MPI_Recv(greeting, MAX_STRING, MPI_CHAR, source, 
          0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("%s\n",greeting);
+      printf("%s\n", greeting);
    } else {
       /* send its message to the next higher ranked process */
       int dest = (my_rank + 1) % p;
