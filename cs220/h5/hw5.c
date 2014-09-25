@@ -32,14 +32,8 @@ int main(void) {
    /* Get my rank among all the processes */
    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-   if (my_rank == 0) {
+   if (p == 1) {
       printf("Greetings from process %d of %d\n", my_rank, p);
-
-      /* Receive incoming message */
-      int source = (my_rank + p - 1) % p;
-      MPI_Recv(greeting, MAX_STRING, MPI_CHAR, source, 
-         0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("%s\n", greeting);
    } else {
       /* send its message to the next higher ranked process */
       int dest = (my_rank + 1) % p;
