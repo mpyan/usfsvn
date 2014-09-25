@@ -38,6 +38,7 @@ int main(void) {
       int source = (my_rank + p - 1) % p;
       MPI_Recv(greeting, MAX_STRING, MPI_CHAR, source, 
          0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("%s\n",greeting);
    } else {
       /* send its message to the next higher ranked process */
       int dest = (my_rank + 1) % p;
@@ -50,9 +51,11 @@ int main(void) {
       int source = (my_rank + p - 1) % p;
       MPI_Recv(greeting, MAX_STRING, MPI_CHAR, source, 
          0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("%s\n", greeting);
    }
 
    /* Shut down MPI */
    MPI_Finalize();
+   printf("done");
    return 0;
 }  /* main */
