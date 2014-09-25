@@ -156,66 +156,44 @@ void Delete(struct list_s* list_p, char* val) {
  */
 void Insert(struct list_s* list_p, char* val) {
    struct list_node_s* temp_p;
-   int found = 0;
 
+   /* Initialize temp_p */
    temp_p = malloc(sizeof(struct list_node_s));
-
    temp_p->data = malloc(99*sizeof(char));
    strcpy(temp_p->data, val);
-
-   /* initialize values of next_p and pred_p members */
    temp_p->next_p = NULL;
    temp_p->pred_p = NULL;
    
-   if (list_p->h_p == NULL){
-      /* list is empty */
+   if (list_p->h_p == NULL){ /* list is empty */
       list_p->h_p = temp_p;
       list_p->t_p = temp_p;
    } else {
-
       struct list_node_s* curr_p = list_p->h_p;
       while (curr_p != NULL) {
          if (strcmp(curr_p->data, val) == 0){
-            found = 1;
-            break;
+            printf("%s is already in the list\n", val);
+            return;
          }
-         else if (strcmp(curr_p->data, val) > 0){
-            // printf("blah%s\n",curr_p->data);
-            // printf("%s > %s\n", curr_p->data, val);
+         else if (strcmp(curr_p->data, val) > 0)
             break;
-         }
          curr_p = curr_p->next_p;
       }
-      if (found == 1){
-         printf("%s is already in the list\n", val);
-      } else {
-         if (curr_p != NULL){
-            temp_p->pred_p = curr_p->pred_p;
-            temp_p->next_p = curr_p;
-            if (curr_p->pred_p == NULL) {/* first in the list */
-               // printf("curr_p is %s \n", curr_p->data);
-               list_p->h_p = temp_p;
-               curr_p->pred_p = temp_p;
-            }
-            else {
-               // printf("curr_p is %s \n", curr_p->data);
-               // printf("curr_p->pred_p is %s\n",curr_p->pred_p->data);
-               curr_p->pred_p->next_p = temp_p;
-               curr_p->pred_p = temp_p;
-            }
-            // if (curr_p->next_p == NULL) /* last in the list */
-            //    list_p->t_p = curr_p;
-            // else
-            //    curr_p->next_p->pred_p = temp_p;
-         } else {
-            // printf("curr_p is null\n");
-            // printf("list_p->t_p = %s\n", list_p->t_p->data);
-            temp_p->pred_p = list_p->t_p; /* !!! attach to the end */
-            // printf("temp_p->pred_p = %s\n", temp_p->pred_p->data);
-            list_p->t_p->next_p = temp_p;
-            list_p->t_p = temp_p;
-            // printf("done\n");
+
+      if (curr_p != NULL){
+         temp_p->pred_p = curr_p->pred_p;
+         temp_p->next_p = curr_p;
+         if (curr_p->pred_p == NULL) { /* first in the list */
+            list_p->h_p = temp_p;
+            curr_p->pred_p = temp_p;
          }
+         else {
+            curr_p->pred_p->next_p = temp_p;
+            curr_p->pred_p = temp_p;
+         }
+      } else { /* val is the "biggest" word */
+         temp_p->pred_p = list_p->t_p; /* attach to the end */
+         list_p->t_p->next_p = temp_p;
+         list_p->t_p = temp_p;
       }
    }
 }   /* Insert */
