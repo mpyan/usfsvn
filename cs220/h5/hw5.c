@@ -56,6 +56,5 @@ int main(void) {
 
    /* Shut down MPI */
    MPI_Finalize();
-   printf("done");
    return 0;
 }  /* main */
