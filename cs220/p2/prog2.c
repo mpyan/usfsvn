@@ -7,8 +7,8 @@
  *           followed by arguments needed by operators.
  * Output:   Results of operations.
  *
- * Compile:  gcc -g -Wall -o linked_list linked_list.c
- * Run:      ./linked_list
+ * Compile:  gcc -g -Wall -o prog2 prog2.c
+ * Run:      ./prog2
  *
  * Notes:
  *    1.  Repeated values are allowed in the list
@@ -38,6 +38,8 @@ void Print(struct list_s* list_p);
 void Free_list(struct list_s* list_p); 
 char Get_command(void);
 void Get_value(char* dest);
+struct list_node_s* Allocate_node(int size);
+void Free_node(struct list_node_s* node_p);
 
 /*-----------------------------------------------------------------*/
 int main(void) {
@@ -122,17 +124,16 @@ void Delete(struct list_s* list_p, char* val) {
    struct list_node_s* curr_p = list_p->h_p;
 
    /* Find node containing val */
-   while (curr_p != NULL)
+   while (curr_p != NULL) {
       if (strcmp(curr_p->data, val) == 0) 
          break;
-      else { // curr_p->data != val 
+      else /* curr_p->data != val */
          curr_p = curr_p->next_p;
-      }
+   }
 
    if (curr_p == NULL)
       printf("%s is not in the list\n", val);
-
-   else {
+   else { /* Delete the node */
       if (curr_p->pred_p == NULL) /* first in the list */
          list_p->h_p = curr_p->next_p;
       if (curr_p->next_p == NULL) /* last in the list */
@@ -141,9 +142,8 @@ void Delete(struct list_s* list_p, char* val) {
          curr_p->next_p->pred_p = curr_p->pred_p;
       if (curr_p->pred_p != NULL) /* has predecessor */
          curr_p->pred_p->next_p = curr_p->next_p;
-      free(curr_p);
+      Free_node(curr_p);
    }
-
 }  /* Delete */
 
 
@@ -158,11 +158,8 @@ void Insert(struct list_s* list_p, char* val) {
    struct list_node_s* temp_p;
 
    /* Initialize temp_p */
-   temp_p = malloc(sizeof(struct list_node_s));
-   temp_p->data = malloc(99*sizeof(char));
+   temp_p = Allocate_node(strlen(val));
    strcpy(temp_p->data, val);
-   temp_p->next_p = NULL;
-   temp_p->pred_p = NULL;
    
    if (list_p->h_p == NULL){ /* list is empty */
       list_p->h_p = temp_p;
@@ -231,7 +228,7 @@ void Free_list(struct list_s* list_p) {
    while (curr_p != NULL) {
       temp_p = curr_p;
       curr_p = curr_p->next_p;
-      free(temp_p);     
+      Free_node(temp_p);     
    }
 
    list_p->h_p = NULL;
@@ -262,3 +259,18 @@ void Get_value(char* dest) {
    printf("Please enter a value:  ");
    scanf("%s", dest);
 }  /* Get_value */
+
+struct list_node_s* Allocate_node(int size){
+   struct list_node_s* temp_p;
+
+   temp_p = malloc(sizeof(struct list_node_s));
+   temp_p->data = malloc((size+1)*sizeof(char));
+   temp_p->next_p = NULL;
+   temp_p->pred_p = NULL;
+   return temp_p;
+}
+
+void Free_node(struct list_node_s* node_p){
+   free(node_p->data);
+   free(node_p);
+}
