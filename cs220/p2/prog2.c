@@ -1,7 +1,10 @@
-/* File:     linked_list.c
+/* File:     prog2.c
  *
- * Purpose:  Implement an unsorted linked list with ops insert (at head),
- *           print, member, delete, free_list.
+ * Author:   Mark Yan
+ *
+ * Purpose:  Implement an sorted linked list with ops insert,
+ *           print, member, delete, free_list. Items in the list are stored
+ *           in alphabetical order.
  * 
  * Input:    Single character lower case letters to indicate operators, 
  *           followed by arguments needed by operators.
@@ -11,9 +14,9 @@
  * Run:      ./prog2
  *
  * Notes:
- *    1.  Repeated values are allowed in the list
- *    2.  delete only deletes the first occurrence of a value
- *    3.  Program assumes an int will be entered when prompted
+ *    1.  Repeated values are not allowed in the list (will print a
+ *        message if the input value is already in the list)
+ *    2.  Program assumes a char or string will be entered when prompted
  *        for one.
  */
 #include <stdio.h>
@@ -44,12 +47,12 @@ void Free_node(struct list_node_s* node_p);
 /*-----------------------------------------------------------------*/
 int main(void) {
    char command;
-   // int  value;
-   char value[99];
+   char value[99]; /* stores the input */
+
+   /* start with empty list */
    struct list_s list;
    list.h_p = NULL;
-   list.t_p = NULL; 
-      /* start with empty list */
+   list.t_p = NULL;
 
    command = Get_command();
    while (command != 'q' && command != 'Q') {
@@ -96,8 +99,8 @@ int main(void) {
 /*-----------------------------------------------------------------
  * Function:    Member
  * Purpose:     search list for val
- * Input args:  head_p:  pointer to head of list
- *              val:  value to search for
+ * Input args:  list_p:  pointer the list
+ *              val:     value to search for
  * Return val:  1 if val is in list, 0 otherwise
  */
 int Member(struct list_s* list_p, char* val) {
@@ -115,10 +118,9 @@ int Member(struct list_s* list_p, char* val) {
 
 /*-----------------------------------------------------------------
  * Function:   Delete
- * Purpose:    Delete the first occurrence of val from list
- * Input args: head_p: pointer to the head of the list
+ * Purpose:    Delete val from list
+ * Input args: list_p: pointer to the list
  *             val:    value to be deleted
- * Return val: Possibly updated pointer to head of list
  */
 void Delete(struct list_s* list_p, char* val) {
    struct list_node_s* curr_p = list_p->h_p;
@@ -149,10 +151,11 @@ void Delete(struct list_s* list_p, char* val) {
 
 /*-----------------------------------------------------------------
  * Function:   Insert
- * Purpose:    Insert val at head of list
- * Input args: head_p: pointer to head of list
- *             val:  new value to be inserted
- * Return val: Pointer to head of list
+ * Purpose:    Insert val in the correct position in the list
+ *             according to alphabetical order, or
+ *             Print a message if val is already in the list
+ * Input args: list_p: pointer to the list
+ *             val:    new value to be inserted
  */
 void Insert(struct list_s* list_p, char* val) {
    struct list_node_s* temp_p;
@@ -198,7 +201,7 @@ void Insert(struct list_s* list_p, char* val) {
 /*-----------------------------------------------------------------
  * Function:   Print
  * Purpose:    Print list on a single line of stdout
- * Input arg:  head_p
+ * Input arg:  list_p : pointer to the list
  */
 void Print(struct list_s* list_p) {
    struct list_node_s* curr_p = list_p->h_p;
@@ -215,10 +218,7 @@ void Print(struct list_s* list_p) {
 /*-----------------------------------------------------------------
  * Function:    Free_list
  * Purpose:     free each node in the list
- * Input arg:   head_p:  pointer to head of list
- * Return val:  NULL pointer
- * Note:        head_p is set to NULL on completion, indicating
- *              list is empty.
+ * Input arg:   list_p:  pointer to the list
  */
 void Free_list(struct list_s* list_p) {
    struct list_node_s* curr_p;
@@ -251,15 +251,20 @@ char Get_command(void) {
 
 /*-----------------------------------------------------------------
  * Function:   Get_value
- * Purpose:    Get an int from stdin
- * Return value:  the next int in stdin
- * Note:       Behavior unpredictable if an int isn't entered
+ * Purpose:    Get string from stdin and assign the value to dest
+ * Input arg:  dest: pointer to the string to store the input in
+ * Note:     Behavior unpredictable if an char/string isn't entered
  */
 void Get_value(char* dest) {
    printf("Please enter a value:  ");
    scanf("%s", dest);
 }  /* Get_value */
 
+/*-----------------------------------------------------------------
+ * Function:      Allocate_node
+ * Purpose:       Allocate a node
+ * Return value:  Pointer to the allocated node
+ */
 struct list_node_s* Allocate_node(int size){
    struct list_node_s* temp_p;
 
@@ -270,6 +275,10 @@ struct list_node_s* Allocate_node(int size){
    return temp_p;
 }
 
+/*-----------------------------------------------------------------
+ * Function:      Free_node
+ * Purpose:       Free a node
+ */
 void Free_node(struct list_node_s* node_p){
    free(node_p->data);
    free(node_p);
