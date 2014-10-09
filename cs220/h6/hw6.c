@@ -1,5 +1,5 @@
-/* File:      bcast_driver.c
- * Purpose:   Driver for MPI tree structured broadcast function.
+/* File:      hw6.c
+ * Purpose:   MPI tree structured broadcast function.
  * Input:     A single int
  * Output:    Value received by each process.
  *
@@ -8,8 +8,8 @@
  *    2. Processes call Bcast
  *    3. Each process prints value it received
  *
- * Compile:  mpicc -g -Wall -o bd bcast_driver.c
- * Run:      mpiexec -n <number of processes> bd
+ * Compile:  mpicc -g -Wall -o hw6 hw6.c
+ * Run:      mpiexec -n <number of processes> ./hw6
  *
  * Notes:
  *    1. This program only needs to work when p is a power of 2.
@@ -18,8 +18,6 @@
  *       0->2, 1->3
  *       0->4, 1->5, 2->6, 3->7
  *       etc.
- *   3.  This is NOT a working program:  the Bcast function uses
- *       pseudo-code.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,15 +89,14 @@ int Bcast(int in_val, int my_rank, int p, MPI_Comm comm) {
    unsigned   bitmask = 1;
 
    while (bitmask < p) {
-      // if (I participate) {
-         partner = my_rank ^ bitmask;
-         if (my_rank < partner) // if (I send)
-            MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
-         else
-            MPI_Recv(&in_val, 1, MPI_INT, partner, 0, comm, 
-                  MPI_STATUS_IGNORE); 
-      // }
-      bitmask <<= 1; //Update bitmask;
+      /* if I participate (participate if bitmask < p) */
+      partner = my_rank ^ bitmask;
+      if (my_rank < partner) /* if (I send) */
+         MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
+      else
+         MPI_Recv(&in_val, 1, MPI_INT, partner, 0, comm, 
+               MPI_STATUS_IGNORE); 
+      bitmask <<= 1; /* Update bitmask */
    }
    return in_val;
 }  /* Bcast */
