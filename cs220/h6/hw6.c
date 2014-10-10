@@ -90,13 +90,14 @@ int Bcast(int in_val, int my_rank, int p, MPI_Comm comm) {
    unsigned   bitmask = 1;
 
    while (bitmask < p) {
-      /* if I participate (participate if bitmask < p) */
-      partner = my_rank ^ bitmask;
-      if (my_rank < partner) /* if (I send) */
-         MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
-      else
-         MPI_Recv(&in_val, 1, MPI_INT, partner, 0, comm, 
-               MPI_STATUS_IGNORE); 
+      if (bitmask > (my_rank >> 1)) { /* if I participate */
+         partner = my_rank ^ bitmask;
+         if (my_rank < partner) /* if (I send) */
+            MPI_Send(&in_val, 1, MPI_INT, partner, 0, comm);
+         else
+            MPI_Recv(&in_val, 1, MPI_INT, partner, 0, comm, 
+                  MPI_STATUS_IGNORE);
+      } 
       bitmask <<= 1; /* Update bitmask */
    }
    return in_val;
