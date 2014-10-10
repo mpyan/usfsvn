@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
  *        Here's a table showing the process pairing with 8
  *        processes (r = my_rank, other column heads are 
  *        bitmask)
- *           r     001 010 010 
+ *           r     001 010 100 
  *           -     --- --- ---
  *           0 000 001 010 100  
  *           1 001 000 011 101
