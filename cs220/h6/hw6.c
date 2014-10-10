@@ -1,10 +1,11 @@
 /* File:      hw6.c
+ * Author:    Mark Yan
  * Purpose:   MPI tree structured broadcast function.
  * Input:     A single int
  * Output:    Value received by each process.
  *
  * Algorithm: 
- *    1. Process 0 reads in an it
+ *    1. Process 0 reads in an int
  *    2. Processes call Bcast
  *    3. Each process prints value it received
  *
