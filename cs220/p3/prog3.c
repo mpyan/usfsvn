@@ -12,6 +12,10 @@ const int INFINITY = 1000000;
 void Read_matrix(int mat[], int n);
 void Print_matrix(int mat[], int n);
 
+void Floyd(int mat[], int n){
+
+} /* Floyd */
+
 int main(void) {
    int p, my_rank;
    MPI_Comm comm;
@@ -21,12 +25,6 @@ int main(void) {
    int* temp_mat;
    int* local_mat;
    int* row_int_city;
-
-   int root;
-   int int_city;
-   int local_int_city;
-   int local_city1;
-   int city2;
 
    MPI_Init(NULL, NULL);
    comm = MPI_COMM_WORLD;
@@ -52,6 +50,28 @@ int main(void) {
    }
 
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
+
+   /* Floyd start */
+   int root;
+   int int_city;
+   int local_int_city;
+   int local_city1;
+   int city2;
+
+   for (int_city = 0; int_city < n; int_city++){
+      root = int_city/(n/p);
+      if (my_rank == root){
+         local_int_city = int_city % (n/p);
+         for (j = 0; j < n; j++)
+            row_int_city[j] = local_mat[local_int_city*n + j];
+      }
+      MPI_Bcast(row_int_city, n, MPI_INT, root, MPI_COMM_WORLD);
+      for (local_city1 = 0; local_city1 < n/p; local_city1++){
+         for (city2 = 0; city2 < n; city2++)
+            local_mat[local_city1*n + city2] = min(local_mat[local_city1*n + city2], local_mat[local_city1*n + int_city] + row_int_city[city2]);
+      }
+   }
+   /* Floyd end */
 
    /* Print the matrix when done */
    MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
