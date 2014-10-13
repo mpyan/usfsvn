@@ -12,6 +12,11 @@ const int INFINITY = 1000000;
 void Read_matrix(int mat[], int n);
 void Print_matrix(int mat[], int n);
 
+int min(int x, int y){
+   if (x <= y) return x;
+   else return y;
+}
+
 void Floyd(int mat[], int n){
 
 } /* Floyd */
@@ -58,6 +63,7 @@ int main(void) {
    int local_city1;
    int city2;
 
+   int j = 0;
    for (int_city = 0; int_city < n; int_city++){
       root = int_city/(n/p);
       if (my_rank == root){
