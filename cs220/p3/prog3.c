@@ -46,8 +46,8 @@ int main(void) {
    row_int_city = malloc(n*sizeof(int));
 
    if (my_rank == 0){
-   	  /* Read in the matrix */
-   	  printf("Enter the matrix\n");
+   	/* Read in the matrix */
+   	printf("Enter the matrix\n");
       Read_matrix(temp_mat, n);
    }
 
@@ -56,8 +56,8 @@ int main(void) {
    /* Print the matrix when done */
    MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
    if (my_rank == 0) {
-   	  printf("The solution is: \n");
-   	  Print_matrix(temp_mat, n);
+   	printf("The solution is: \n");
+   	Print_matrix(temp_mat, n);
    }
 
    MPI_Finalize();
