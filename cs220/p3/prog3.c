@@ -37,15 +37,26 @@ int main(void) {
    if (my_rank == 0) {
       printf("Enter n\n");
       scanf("%d", &n);
-      /* Read in the matrix */
-      Read_matrix(temp_mat, n);
    }
    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+   /* allocate memory */
+   temp_mat = malloc(n*n*sizeof(int));
+   local_mat = malloc(n*n*sizeof(int));
+   row_int_city = malloc(n*sizeof(int));
+
+   if (my_rank == 0){
+   	  /* Read in the matrix */
+   	  printf("Enter the matrix\n");
+      Read_matrix(temp_mat, n);
+   }
+
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
 
    /* Print the matrix when done */
    MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
    if (my_rank == 0) {
+   	  printf("The solution is: \n");
    	  Print_matrix(temp_mat, n);
    }
 
