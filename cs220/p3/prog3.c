@@ -1,7 +1,22 @@
 /* prog3.c
+ * Author: Mark Yan
+ * Purpose:  Implement parallelized Floyd's algorithm 
+ *           for solving the all-pairs shortest
+ *           path problem:  find the length of the shortest path between each
+ *           pair of vertices in a directed graph.
+ *
+ *
+ * Input:    n, the number of vertices in the digraph
+ *           mat, the adjacency matrix of the digraph
+ * Output:   A matrix showing the costs of the shortest paths
+ *
  * Compile:  mpicc -g -Wall -o prog3 prog3.c
+ *
  * Run:      mpiexec -n <number of processes> ./prog3
-*/
+ *           For large matrices, put the matrix into a file with n as
+ *           the first line and run with 
+ *           mpiexec -n <number of processes> ./prog3 < large_matrix
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,15 +26,7 @@ const int INFINITY = 1000000;
 
 void Read_matrix(int mat[], int n);
 void Print_matrix(int mat[], int n);
-
-int min(int x, int y){
-   if (x <= y) return x;
-   else return y;
-}
-
-void Floyd(int mat[], int n){
-
-} /* Floyd */
+int Min(int x, int y);
 
 int main(void) {
    int p, my_rank;
@@ -56,7 +63,7 @@ int main(void) {
 
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
 
-   /* Floyd start */
+   /* Begin Floyd's algorithm */
    int root;
    int int_city;
    int local_int_city;
@@ -74,12 +81,15 @@ int main(void) {
       MPI_Bcast(row_int_city, n, MPI_INT, root, MPI_COMM_WORLD);
       for (local_city1 = 0; local_city1 < n/p; local_city1++){
          for (city2 = 0; city2 < n; city2++)
-            local_mat[local_city1*n + city2] = min(local_mat[local_city1*n + city2], local_mat[local_city1*n + int_city] + row_int_city[city2]);
+            local_mat[local_city1*n + city2] = 
+               Min(local_mat[local_city1*n + city2], 
+                  local_mat[local_city1*n + int_city] 
+                     + row_int_city[city2]);
       }
    }
-   /* Floyd end */
+   /* End of Floyd's algorithm */
 
-   /* Print the matrix when done */
+   /* Print the matrix showing the costs of the shortest paths */
    MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
    if (my_rank == 0) {
    	printf("The solution is: \n");
@@ -121,3 +131,14 @@ void Print_matrix(int mat[], int n) {
       printf("\n");
    }
 }  /* Print_matrix */
+
+/*-------------------------------------------------------------------
+ * Function:  Min
+ * Purpose:   Find the minumum value between two integers
+ * In args:   x, y
+ * Return value: value of the smaller integer
+ */
+int Min(int x, int y){
+   if (x <= y) return x;
+   else return y;
+}
