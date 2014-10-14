@@ -96,6 +96,10 @@ int main(void) {
    	Print_matrix(temp_mat, n);
    }
 
+   free(temp_mat);
+   free(local_mat);
+   free(row_int_city);
+
    MPI_Finalize();
    return 0;
 }  /* main */
