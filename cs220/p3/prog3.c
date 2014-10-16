@@ -143,6 +143,8 @@ void Print_matrix(int mat[], int n) {
  * Return value: value of the smaller integer
  */
 int Min(int x, int y){
-   if (x <= y) return x;
-   else return y;
+   if (x <= y)
+      return x;
+   else
+      return y;
 }
