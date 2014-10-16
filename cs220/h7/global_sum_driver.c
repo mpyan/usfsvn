@@ -10,7 +10,7 @@
  *           values on each process.
  *
  * Compile:  mpicc -g -Wall -o gs global_sum_driver.c
- * Run:      mpiexec -n <number of processes> gs
+ * Run:      mpiexec -n <number of processes> ./gs
  *
  * Notes:     
  *    1.  The result returned by all the processes should be valid.
@@ -99,7 +99,7 @@ int Global_sum(int my_contrib, int my_rank, int p, MPI_Comm comm) {
 
    int temp = my_contrib;
    int sum = my_contrib;
-   int i = 0;
+   int i;
    for (i = 1; i < p; i++){
       MPI_Send(&temp, 1, MPI_INT, dest, 0, comm);
       MPI_Recv(&temp, 1, MPI_INT, source, 0, comm, MPI_STATUS_IGNORE);
