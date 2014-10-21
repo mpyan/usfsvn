@@ -1,5 +1,5 @@
-/* prog3.c
- * Author: Mark Yan
+/* File:     prog3.c
+ * Author:   Mark Yan
  * Purpose:  Implement parallelized Floyd's algorithm 
  *           for solving the all-pairs shortest
  *           path problem:  find the length of the shortest path between each
@@ -83,7 +83,7 @@ int main(void) {
 /*-------------------------------------------------------------------
  * Function:  Read_matrix
  * Purpose:   Read in the adjacency matrix
- * In arg:    n: the size of the matrix
+ * In arg:    n:   the size of the matrix
  * Out arg:   mat: the matrix that was read in
  */
 void Read_matrix(int mat[], int n) {
@@ -98,7 +98,7 @@ void Read_matrix(int mat[], int n) {
  * Function:  Print_matrix
  * Purpose:   Print the contents of the matrix
  * In args:   mat: the matrix to print
- *            n: the size of the matrix
+ *            n:   the size of the matrix
  */
 void Print_matrix(int mat[], int n) {
    int i, j;
@@ -130,12 +130,12 @@ int Min(int x, int y){
  * Function:  Floyd
  * Purpose:   Find the length of the shortest path between each
  *            pair of vertices in a directed graph
- * In args:   n: the number of rows and columns
- *            p: the number of processes
- *            my_rank: the process rank
+ * In args:   n:            the size of the matrix
+ *            p:            the number of processes
+ *            my_rank:      the process rank
  *            row_int_city: row of intermediate city values
- *            local_mat: the local matrix of the process
- *            dest_mat: the destination matrix to store the result in
+ *            local_mat:    the local matrix of the process
+ *            dest_mat:     the matrix to store the result in
  */
 void Floyd(int n, int p, int my_rank, int row_int_city[], 
    int local_mat[], int dest_mat[], MPI_Comm comm){
