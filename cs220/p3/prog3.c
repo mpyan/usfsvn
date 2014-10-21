@@ -27,11 +27,12 @@ const int INFINITY = 1000000;
 void Read_matrix(int mat[], int n);
 void Print_matrix(int mat[], int n);
 int Min(int x, int y);
+void Floyd(int n, int p, int my_rank, int row_int_city[], 
+   int local_mat[], int temp_mat[], MPI_Comm comm);
 
 int main(void) {
-   int p, my_rank;
+   int p, n, my_rank;
    MPI_Comm comm;
-   int n;
 
    /* arrays */
    int* temp_mat;
@@ -60,37 +61,12 @@ int main(void) {
    	printf("Enter the matrix\n");
       Read_matrix(temp_mat, n);
    }
-
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
 
-   /* Begin Floyd's algorithm */
-   int root;
-   int int_city;
-   int local_int_city;
-   int local_city1;
-   int city2;
-
-   int j = 0;
-   for (int_city = 0; int_city < n; int_city++){
-      root = int_city/(n/p);
-      if (my_rank == root){
-         local_int_city = int_city % (n/p);
-         for (j = 0; j < n; j++)
-            row_int_city[j] = local_mat[local_int_city*n + j];
-      }
-      MPI_Bcast(row_int_city, n, MPI_INT, root, MPI_COMM_WORLD);
-      for (local_city1 = 0; local_city1 < n/p; local_city1++){
-         for (city2 = 0; city2 < n; city2++)
-            local_mat[local_city1*n + city2] = 
-               Min(local_mat[local_city1*n + city2], 
-                  local_mat[local_city1*n + int_city] 
-                     + row_int_city[city2]);
-      }
-   }
-   /* End of Floyd's algorithm */
+   /* Find the costs of the shortest paths */
+   Floyd(n, p, my_rank, row_int_city, local_mat, temp_mat, comm);
 
    /* Print the matrix showing the costs of the shortest paths */
-   MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
    if (my_rank == 0) {
    	printf("The solution is: \n");
    	Print_matrix(temp_mat, n);
@@ -147,4 +123,44 @@ int Min(int x, int y){
       return x;
    else
       return y;
+}
+
+/*-------------------------------------------------------------------
+ * Function:  Floyd
+ * Purpose:   Find the length of the shortest path between each
+ *            pair of vertices in a directed graph
+ * In args:   n: the number of rows and columns
+ *            p: the number of processes
+ *            my_rank: the process rank
+ *            row_int_city: array storing a row of int_city values
+ *            local_mat: the local matrix
+ *            temp_mat: the temporary matrix
+ */
+void Floyd(int n, int p, int my_rank, int row_int_city[], 
+   int local_mat[], int temp_mat[], MPI_Comm comm){
+
+   int root;
+   int int_city;
+   int local_int_city;
+   int local_city1;
+   int city2;
+
+   int i = 0;
+   for (int_city = 0; int_city < n; int_city++){
+      root = int_city/(n/p);
+      if (my_rank == root){
+         local_int_city = int_city % (n/p);
+         for (i = 0; i < n; i++)
+            row_int_city[i] = local_mat[local_int_city*n + i];
+      }
+      MPI_Bcast(row_int_city, n, MPI_INT, root, MPI_COMM_WORLD);
+      for (local_city1 = 0; local_city1 < n/p; local_city1++){
+         for (city2 = 0; city2 < n; city2++)
+            local_mat[local_city1*n + city2] = 
+               Min(local_mat[local_city1*n + city2], 
+                  local_mat[local_city1*n + int_city] 
+                     + row_int_city[city2]);
+      }
+   }
+   MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
 }
