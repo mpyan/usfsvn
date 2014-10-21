@@ -28,7 +28,7 @@ void Read_matrix(int mat[], int n);
 void Print_matrix(int mat[], int n);
 int Min(int x, int y);
 void Floyd(int n, int p, int my_rank, int row_int_city[], 
-   int local_mat[], int temp_mat[], MPI_Comm comm);
+   int local_mat[], int dest_mat[], MPI_Comm comm);
 
 int main(void) {
    int p, n, my_rank;
@@ -56,14 +56,14 @@ int main(void) {
    local_mat = malloc(n*n*sizeof(int));
    row_int_city = malloc(n*sizeof(int));
 
+   /* Read in the matrix */
    if (my_rank == 0){
-   	/* Read in the matrix */
    	printf("Enter the matrix\n");
       Read_matrix(temp_mat, n);
    }
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
 
-   /* Find the costs of the shortest paths */
+   /* Find the costs of the shortest paths, store results in temp_mat */
    Floyd(n, p, my_rank, row_int_city, local_mat, temp_mat, comm);
 
    /* Print the matrix showing the costs of the shortest paths */
@@ -83,8 +83,8 @@ int main(void) {
 /*-------------------------------------------------------------------
  * Function:  Read_matrix
  * Purpose:   Read in the adjacency matrix
- * In arg:    n
- * Out arg:   mat
+ * In arg:    n: the size of the matrix
+ * Out arg:   mat: the matrix that was read in
  */
 void Read_matrix(int mat[], int n) {
    int i, j;
@@ -97,7 +97,8 @@ void Read_matrix(int mat[], int n) {
 /*-------------------------------------------------------------------
  * Function:  Print_matrix
  * Purpose:   Print the contents of the matrix
- * In args:   mat, n
+ * In args:   mat: the matrix to print
+ *            n: the size of the matrix
  */
 void Print_matrix(int mat[], int n) {
    int i, j;
@@ -115,7 +116,7 @@ void Print_matrix(int mat[], int n) {
 /*-------------------------------------------------------------------
  * Function:  Min
  * Purpose:   Find the minumum value between two integers
- * In args:   x, y
+ * In args:   x, y: the two integers to compare
  * Return value: value of the smaller integer
  */
 int Min(int x, int y){
@@ -132,12 +133,12 @@ int Min(int x, int y){
  * In args:   n: the number of rows and columns
  *            p: the number of processes
  *            my_rank: the process rank
- *            row_int_city: array storing a row of int_city values
- *            local_mat: the local matrix
- *            temp_mat: the temporary matrix
+ *            row_int_city: row of intermediate city values
+ *            local_mat: the local matrix of the process
+ *            dest_mat: the destination matrix to store the result in
  */
 void Floyd(int n, int p, int my_rank, int row_int_city[], 
-   int local_mat[], int temp_mat[], MPI_Comm comm){
+   int local_mat[], int dest_mat[], MPI_Comm comm){
 
    int root;
    int int_city;
@@ -162,5 +163,5 @@ void Floyd(int n, int p, int my_rank, int row_int_city[],
                      + row_int_city[city2]);
       }
    }
-   MPI_Gather(local_mat, n*n/p, MPI_INT, temp_mat, n*n/p, MPI_INT, 0, comm);
-}
+   MPI_Gather(local_mat, n*n/p, MPI_INT, dest_mat, n*n/p, MPI_INT, 0, comm);
+} /* Floyd */
