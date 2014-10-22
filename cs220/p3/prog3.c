@@ -5,7 +5,6 @@
  *           path problem:  find the length of the shortest path between each
  *           pair of vertices in a directed graph.
  *
- *
  * Input:    n, the number of vertices in the digraph
  *           mat, the adjacency matrix of the digraph
  * Output:   A matrix showing the costs of the shortest paths
