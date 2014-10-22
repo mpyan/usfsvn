@@ -35,9 +35,9 @@ int main(void) {
    MPI_Comm comm;
 
    /* arrays */
-   int* temp_mat;
-   int* local_mat;
-   int* row_int_city;
+   int* temp_mat = NULL;
+   int* local_mat = NULL;
+   int* row_int_city = NULL;
 
    MPI_Init(NULL, NULL);
    comm = MPI_COMM_WORLD;
@@ -49,16 +49,16 @@ int main(void) {
       printf("Enter n\n");
       scanf("%d", &n);
    }
-   MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
 
    /* allocate memory */
-   temp_mat = malloc(n*n*sizeof(int));
    local_mat = malloc(n*n*sizeof(int));
    row_int_city = malloc(n*sizeof(int));
 
    /* Read in the matrix */
    if (my_rank == 0){
-   	printf("Enter the matrix\n");
+      printf("Enter the matrix\n");
+      temp_mat = malloc(n*n*sizeof(int));
       Read_matrix(temp_mat, n);
    }
    MPI_Scatter(temp_mat, n*n/p, MPI_INT, local_mat, n*n/p, MPI_INT, 0, comm);
@@ -78,7 +78,7 @@ int main(void) {
 
    MPI_Finalize();
    return 0;
-}  /* main */
+}  /* main */  
 
 /*-------------------------------------------------------------------
  * Function:  Read_matrix
@@ -135,7 +135,10 @@ int Min(int x, int y){
  *            my_rank:      the process rank
  *            row_int_city: row of intermediate city values
  *            local_mat:    the local matrix of the process
- *            dest_mat:     the matrix to store the result in
+ *            comm:         the communicator
+ * Out arg:   dest_mat:     the matrix storing the result with the
+ *                          lengths of the shortest paths between
+ *                          between each pair of vertices.
  */
 void Floyd(int n, int p, int my_rank, int row_int_city[], 
    int local_mat[], int dest_mat[], MPI_Comm comm){
@@ -154,7 +157,7 @@ void Floyd(int n, int p, int my_rank, int row_int_city[],
          for (i = 0; i < n; i++)
             row_int_city[i] = local_mat[local_int_city*n + i];
       }
-      MPI_Bcast(row_int_city, n, MPI_INT, root, MPI_COMM_WORLD);
+      MPI_Bcast(row_int_city, n, MPI_INT, root, comm);
       for (local_city1 = 0; local_city1 < n/p; local_city1++){
          for (city2 = 0; city2 < n; city2++)
             local_mat[local_city1*n + city2] = 
