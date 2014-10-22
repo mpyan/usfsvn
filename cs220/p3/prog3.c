@@ -1,5 +1,7 @@
 /* File:     prog3.c
+ *
  * Author:   Mark Yan
+ *
  * Purpose:  Implement parallelized Floyd's algorithm 
  *           for solving the all-pairs shortest
  *           path problem:  find the length of the shortest path between each
