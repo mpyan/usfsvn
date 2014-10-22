@@ -69,8 +69,8 @@ int main(void) {
 
    /* Print the matrix showing the costs of the shortest paths */
    if (my_rank == 0) {
-   	printf("The solution is: \n");
-   	Print_matrix(temp_mat, n);
+      printf("The solution is: \n");
+      Print_matrix(temp_mat, n);
    }
 
    free(temp_mat);
