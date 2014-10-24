@@ -10,6 +10,24 @@
  *
  * Input:   list (optional)
  * Output:  sorted list
+ *
+ * Run-times (in seconds):
+ * n      |     bubble                |    odd-even
+ * -------|---------------------------|---------------------
+ * 100    |     1.2874600000E-05      |    1.09672500000E-05
+ * 1000   |     1.379967000E-03       |    6.7090990000E-04
+ * 10000  |     1.461420E-01          |    6.54790400E-02
+ * 100000 |     1.44631E+01           |    8.992895E+00
+ *
+ * This program was run on
+ * a system running Mac OS X 10.9.5 with 2.5 GHz Intel Core i5
+ * and 4 GB of RAM.
+ *
+ * This program was run 50 times for each input size.
+ * The lowest/minimum result out of the 50 results 
+ * for each input size were used for the run-times 
+ * in the table above.
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
