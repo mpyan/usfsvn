@@ -67,7 +67,6 @@ int main(int argc, char* argv[]) {
 
    Print_list(a, n, "After sort");
    printf("Elapsed time = %e seconds\n", finish-start);
-   printf("%i,%e\n", n,finish-start);
    
    free(a);
    return 0;
