@@ -1,5 +1,7 @@
 /* File:    serial_odd_even.c
  *
+ * Author:  Mark Yan
+ *
  * Purpose: Use odd-even transposition sort to sort a list of ints.
  *
  * Compile: gcc -g -Wall -O3 -o serial_odd_even serial_odd_even.c
@@ -66,7 +68,7 @@ int main(int argc, char* argv[]) {
    GET_TIME(finish);
 
    Print_list(a, n, "After sort");
-   printf("%i,%e\n", n,finish-start);
+   printf("Elapsed time = %e seconds\n", finish-start);
 
    free(a);
    return 0;

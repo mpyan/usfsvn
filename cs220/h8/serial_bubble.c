@@ -1,5 +1,7 @@
 /* File:    serial_bubble.c
  *
+ * Author:  Mark Yan
+ *
  * Purpose: Use bubble sort to sort a list of ints.
  *
  * Compile: gcc -g -Wall -O3 -o serial_bubble serial_bubble.c
