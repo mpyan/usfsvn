@@ -94,7 +94,7 @@ void Print_array(char* title, double y[], int n) {
 
    printf("%s\n", title);
    for (i = 0; i < n; i++)
-      printf("%4.1f ", y[i]);
+      printf("%f ", y[i]);
    printf("\n");
 }  /* Print_array */
 
