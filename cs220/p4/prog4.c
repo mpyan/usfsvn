@@ -48,14 +48,13 @@ int main(int argc, char* argv[]) {
 		j = 1;
 	}
 	/* Cyclic distribution of values to check */
-	for (i = 2*my_rank + 3; i < n; i++){
-		/* not sure */
+	for (i = 2*my_rank + 3; i < n; i+=2*p){
 		prime_arr[j] = i;
 		j++;
 	}
 
-	/* TODO: Print debug info for Search */
-	Print_list(prime_arr, ((n/(2*p))+2), my_rank);
+	/* Print debug info for Search */
+	Print_list(prime_arr, j, my_rank);
 
 	free(prime_arr);
 	MPI_Finalize();
