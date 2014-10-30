@@ -17,6 +17,7 @@ const int RMAX = 100;
 const int STRING_MAX = 10000;
 
 void Print_list(int list[], int n, int my_rank);
+int Is_prime(int i);
 
 int main(int argc, char* argv[]) {
    int my_rank, n;
@@ -26,7 +27,11 @@ int main(int argc, char* argv[]) {
    comm = MPI_COMM_WORLD;
    MPI_Comm_rank(comm, &my_rank);
 
-   MPI_Finalize();
+   /* Get and broadcast n */
+   n = strtol(argv[1], NULL, 10);
+   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
+
+	MPI_Finalize();
    return 0;
 }  /* main */
 
@@ -57,3 +62,18 @@ void Print_list(int list[], int n, int my_rank) {
    printf("%s\n", string);
    fflush(stdout);
 }  /* Print_list */
+
+/*-------------------------------------------------------------------
+ * Function:   Is_prime
+ * Purpose:    Determine whether the argument is prime
+ * Input arg:  i
+ * Return val: true (nonzero) if arg is prime, false (zero) otherwise
+ */
+int Is_prime(int i) {
+   int j;
+
+   for (j = 2; j <= sqrt(i); j++)
+      if (i % j == 0)
+         return 0;
+   return 1;
+}  /* Is_prime */
