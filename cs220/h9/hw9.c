@@ -1,4 +1,19 @@
-/* File: hw9.c
+/* File:    hw9.c
+ * 
+ * Author:  Mark Yan
+ *
+ * Purpose: Compute a DAXPY (Double Precision Alpha X Plus Y)
+ *
+ * Input:   n,     the number of elements in x and y
+ *          x,     the first array
+ *          y,     the second array, and also the array to store
+ *                 the result
+ *          alpha  the number to use as the multiplier
+ *
+ * Output:  The modified contents of y as the result.
+ *
+ * Compile: gcc -g -Wall -o hw9 hw9.c -lpthread
+ * Usage:   ./hw9 <thread_count>
  */
 
 #include <stdio.h>
@@ -14,8 +29,8 @@ int n;
 
 /* Serial functions */
 void Usage(char* prog_name);
-void Print_vector(char* title, double y[], int m);
-void Read_vector(char* prompt, double x[], int n);
+void Print_array(char* title, double y[], int m);
+void Read_array(char* prompt, double x[], int n);
 
 /* Parallel function */
 void *Daxpy(void* rank);
@@ -25,9 +40,11 @@ int main(int argc, char* argv[]){
 	pthread_t* thread_handles = NULL;
 
 	/* Get number of threads from command line */
-   if (argc != 2) Usage(argv[0]);
+   if (argc != 2)
+      Usage(argv[0]);
    thread_count = strtol(argv[1], NULL, 10);
-   if (thread_count <= 0) Usage(argv[0]);
+   if (thread_count <= 0)
+      Usage(argv[0]);
 
    thread_handles = malloc(thread_count*sizeof(pthread_t));
 
@@ -40,8 +57,8 @@ int main(int argc, char* argv[]){
    y = malloc(n*sizeof(double));
 
    /* Read in x, y and alpha */
-   Read_vector("Enter x", x, n);
-   Read_vector("Enter y", y, n);
+   Read_array("Enter x", x, n);
+   Read_array("Enter y", y, n);
    printf("Please enter alpha: ");
    scanf("%lf", &alpha);
 
@@ -53,7 +70,7 @@ int main(int argc, char* argv[]){
       pthread_join(thread_handles[thread], NULL);
 
    /* Print the result */
-   Print_vector("Result: ", y, n);
+   Print_array("Result: ", y, n);
 
    free(x);
    free(y);
@@ -68,33 +85,40 @@ void Usage(char* prog_name) {
 }  /* Usage */
 
 /*------------------------------------------------------------------
- * Function:    Print_vector
+ * Function:    Print_array
  * Purpose:     Print a vector
- * In args:     title, y, m
+ * In args:     title, y, n
  */
-void Print_vector(char* title, double y[], int m) {
+void Print_array(char* title, double y[], int n) {
    int   i;
 
    printf("%s\n", title);
-   for (i = 0; i < m; i++)
+   for (i = 0; i < n; i++)
       printf("%4.1f ", y[i]);
    printf("\n");
-}  /* Print_vector */
+}  /* Print_array */
 
 /*------------------------------------------------------------------
- * Function:        Read_vector
+ * Function:        Read_array
  * Purpose:         Read in the vector x
  * In arg:          prompt, n
  * Out arg:         x
  */
-void Read_vector(char* prompt, double x[], int n) {
+void Read_array(char* prompt, double x[], int n) {
    int   i;
 
    printf("%s\n", prompt);
    for (i = 0; i < n; i++) 
       scanf("%lf", &x[i]);
-}  /* Read_vector */
+}  /* Read_array */
 
+/*------------------------------------------------------------------
+ * Function:        Daxpy
+ * Purpose:         Parallel compute DAXPY from data stored in
+ *                  two shared arrays x and y, and a shared double
+ *                  alpha, and store result in y
+ * In arg:          rank: the thread "rank"
+ */
 void *Daxpy(void* rank){
    long my_rank = (long) rank;
    int local_n = n/thread_count;
