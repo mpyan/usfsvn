@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <mpi.h>
 
 /* Ints in the lists will be between 0 and RMAX */
@@ -20,7 +21,7 @@ void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
 int main(int argc, char* argv[]) {
-   int my_rank, n, i, j;
+   int my_rank, n, i, j, p;
    MPI_Comm comm;
 
    /* arrays */
@@ -29,10 +30,11 @@ int main(int argc, char* argv[]) {
    int* temp_arr = NULL; /* temporary storage */
 
    int* prime_count = NULL; /* Store each process's number of primes */
-
    MPI_Init(&argc, &argv);
    comm = MPI_COMM_WORLD;
+
    MPI_Comm_rank(comm, &my_rank);
+   MPI_Comm_size(comm, &p);
 
    /* Get and broadcast n */
    n = strtol(argv[1], NULL, 10);
@@ -52,8 +54,10 @@ int main(int argc, char* argv[]) {
 		j++;
 	}
 
-	/* TODO: Print debug info for Phase 0 */
+	/* TODO: Print debug info for Search */
+	Print_list(prime_arr, ((n/(2*p))+2), my_rank);
 
+	free(prime_arr);
 	MPI_Finalize();
    return 0;
 }  /* main */
