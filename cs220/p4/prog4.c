@@ -20,8 +20,15 @@ void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
 int main(int argc, char* argv[]) {
-   int my_rank, n;
+   int my_rank, n, i, j;
    MPI_Comm comm;
+
+   /* arrays */
+   int* prime_arr = NULL; /* primes */
+   int* recv_arr = NULL; /* received primes */
+   int* temp_arr = NULL; /* temporary storage */
+
+   int* prime_count = NULL; /* Store each process's number of primes */
 
    MPI_Init(&argc, &argv);
    comm = MPI_COMM_WORLD;
@@ -30,6 +37,22 @@ int main(int argc, char* argv[]) {
    /* Get and broadcast n */
    n = strtol(argv[1], NULL, 10);
    MPI_Bcast(&n, 1, MPI_INT, 0, comm);
+
+   /* Start doing stuff */
+   j = 0;
+	prime_arr = malloc(((n/(2*p))+2)*sizeof(int));
+	if (my_rank == 0){
+		prime_arr[0] = 2;
+		j = 1;
+	}
+	/* Cyclic distribution of values to check */
+	for (i = 2*my_rank + 3; i < n; i++){
+		/* not sure */
+		prime_arr[j] = i;
+		j++;
+	}
+
+	/* TODO: Print debug info for Phase 0 */
 
 	MPI_Finalize();
    return 0;
