@@ -29,8 +29,8 @@ int n;
 
 /* Serial functions */
 void Usage(char* prog_name);
-void Print_array(char* title, double x[], int n);
-void Read_array(char* prompt, double x[], int n);
+void Print_array(char* text, double x[], int n);
+void Read_array(char* text, double x[], int n);
 
 /* Parallel function */
 void *Daxpy(void* rank);
