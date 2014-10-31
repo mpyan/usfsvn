@@ -75,6 +75,8 @@ int main(int argc, char* argv[]){
    free(x);
    free(y);
    free(thread_handles);
+
+   return 0;
 } /* main */
 
 /*-------------------------------------------------------------------*/
