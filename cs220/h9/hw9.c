@@ -22,14 +22,14 @@
 
 /* Global variables: accessible to all threads */
 int thread_count;
-double alpha = 0;
+double alpha;
 double* x = NULL;
 double* y = NULL;
 int n;
 
 /* Serial functions */
 void Usage(char* prog_name);
-void Print_array(char* title, double y[], int m);
+void Print_array(char* title, double x[], int n);
 void Read_array(char* prompt, double x[], int n);
 
 /* Parallel function */
@@ -86,28 +86,33 @@ void Usage(char* prog_name) {
 
 /*------------------------------------------------------------------
  * Function:    Print_array
- * Purpose:     Print a vector
- * In args:     title, y, n
+ * Purpose:     Print an array
+ * In args:     text: a string message to display before printing
+ *                    the contents of the array x
+ *              x:    the array to print 
+ *              n:    the number of elements in the array
  */
-void Print_array(char* title, double y[], int n) {
-   int   i;
+void Print_array(char* text, double x[], int n) {
+   int i;
 
-   printf("%s\n", title);
+   printf("%s\n", text);
    for (i = 0; i < n; i++)
-      printf("%f ", y[i]);
+      printf("%f ", x[i]);
+
    printf("\n");
 }  /* Print_array */
 
 /*------------------------------------------------------------------
  * Function:        Read_array
- * Purpose:         Read in the vector x
- * In arg:          prompt, n
- * Out arg:         x
+ * Purpose:         Read in the array x
+ * In arg:          text: a prompt to display before reading
+ *                  n:    the number of elements in the array
+ * Out arg:         x:    the array to read in
  */
-void Read_array(char* prompt, double x[], int n) {
-   int   i;
+void Read_array(char* text, double x[], int n) {
+   int i;
 
-   printf("%s\n", prompt);
+   printf("%s\n", text);
    for (i = 0; i < n; i++) 
       scanf("%lf", &x[i]);
 }  /* Read_array */
