@@ -66,28 +66,27 @@ int main(int argc, char* argv[]) {
    Print_list(prime_count, p, my_rank);
 
    /* Distributed Mergesort */
-   // int partner;
-   // int done = 0;
-   // unsigned bitmask = (unsigned) 1;
-   // printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n", 
-   //      my_rank, partner, bitmask, my_pass);
-   // fflush(stdout);
-   // while(!done && bitmask < p){
-   //    printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n", 
-   //         my_rank, partner, bitmask, my_pass);
-   //    fflush(stdout);
-   //    if (my_rank < partner) {
-   //          if (partner < p) {
-   //              MPI_Recv(&temp, 1, MPI_INT, partner, 0, comm, 
-   //                    MPI_STATUS_IGNORE);
-   //              sum += temp;
-   //          }
-   //          bitmask <<= 1;
-   //      } else {
-   //          MPI_Send(&sum, 1, MPI_INT, partner, 0, comm); 
-   //          done = 1;
-   //      }
-   // }
+   int partner;
+   int done = 0;
+   unsigned bitmask = (unsigned) 1;
+   int my_pass = -1;
+
+   while (!done && bitmask < p){
+      partner = my_rank ^ bitmask;
+      my_pass++;
+      printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n",
+      my_rank, partner, bitmask, my_pass);
+      if (partner >= p){
+      if (my_rank < partner){
+         if (partner < p){
+            /* receive */
+         }
+         bitmask <<= 1;
+      } else {
+         /* send */
+         done = 1;
+      }
+   }
 
 	free(prime_arr);
 	MPI_Finalize();
