@@ -20,6 +20,22 @@ const int STRING_MAX = 10000;
 void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
+void Update_counts(int* counts, int n, unsigned bitmask){
+   int i_rank;
+   int partner;
+   for (i_rank = 0; i_rank < n; i_rank++){
+      partner = i_rank ^ bitmask;
+      if (i_rank < partner){
+         if (i_rank < n){
+            counts[i_rank] += counts[partner];
+         }
+      } else {
+         /* done */
+         counts[i_rank] = 0;
+      }
+   }
+}
+
 /*-------------------------------------------------------------------
  * Function:   Merge
  * Purpose:    Merge the contents of the arrays A and B into array C
@@ -108,15 +124,28 @@ int main(int argc, char* argv[]) {
    while (!done && bitmask < p){
       partner = my_rank ^ bitmask;
       my_pass++;
-      printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n",
-      my_rank, partner, bitmask, my_pass);
+      // printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n",
+      // my_rank, partner, bitmask, my_pass);
       if (my_rank < partner){
          if (partner < p){
+            int new_n = local_n + prime_count[partner];
             /* receive */
             recv_arr = malloc(prime_count[partner]*sizeof(int));
+            temp_arr = malloc(new_n*sizeof(int));
             MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
                0, comm, MPI_STATUS_IGNORE);
+
+            /* Merge */
+            Merge(prime_arr, local_n, recv_arr, prime_count[partner], temp_arr,
+               new_n);
+            /* swap the pointers */
+            int* swapper = prime_arr;
+            prime_arr = temp_arr;
+            temp_arr = swapper;
+            local_n = new_n;
+            // memcpy(prime_arr, temp_arr, new_n);
          }
+         Update_counts(prime_count, p, bitmask);
          bitmask <<= 1;
       } else {
          /* send */
@@ -124,6 +153,9 @@ int main(int argc, char* argv[]) {
          done = 1;
       }
    }
+
+   if(my_rank == 0)
+      Print_list(prime_arr, local_n, 0);
 
 	free(prime_arr);
 	MPI_Finalize();
