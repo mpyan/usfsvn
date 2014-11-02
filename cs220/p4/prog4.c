@@ -20,8 +20,42 @@ const int STRING_MAX = 10000;
 void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
+/*-------------------------------------------------------------------
+ * Function:   Merge
+ * Purpose:    Merge the contents of the arrays A and B into array C
+ * Input args:
+ *    asize:  the number of elements in A
+ *    bsize:  the number of elements in B
+ *    csize:  the number of elements in C (= asize + bsize)
+ *    A, B:  the arrays
+ *
+ * Output arg:
+ *    C:  result array
+ */
+void Merge(int A[], int asize, int B[], int bsize, int C[], int csize) {
+   int ai, bi, ci;
+   
+   ai = bi = ci = 0;
+   while (ai < asize && bi < bsize) {
+      if (A[ai] <= B[bi]) {
+         C[ci] = A[ai];
+         ci++; ai++;
+      } else {
+         C[ci] = B[bi];
+         ci++; bi++;
+      }
+   }
+
+   if (ai >= asize)
+      for (; ci < csize; ci++, bi++)
+         C[ci] = B[bi];
+   else
+      for (; ci < csize; ci++, ai++)
+         C[ci] = A[ai];
+}  /* Merge */
+
 int main(int argc, char* argv[]) {
-   int my_rank, n, i, j, p;
+   int my_rank, n, i, p;
    int local_n;
    MPI_Comm comm;
 
@@ -63,7 +97,7 @@ int main(int argc, char* argv[]) {
    prime_count = malloc(p*sizeof(int));
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
 
-   Print_list(prime_count, p, my_rank);
+   // Print_list(prime_count, p, my_rank);
 
    /* Distributed Mergesort */
    int partner;
@@ -76,14 +110,17 @@ int main(int argc, char* argv[]) {
       my_pass++;
       printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n",
       my_rank, partner, bitmask, my_pass);
-      if (partner >= p){
       if (my_rank < partner){
          if (partner < p){
             /* receive */
+            recv_arr = malloc(prime_count[partner]*sizeof(int));
+            MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
+               0, comm, MPI_STATUS_IGNORE);
          }
          bitmask <<= 1;
       } else {
          /* send */
+         MPI_Send(prime_arr, local_n, MPI_INT, partner, 0, comm);
          done = 1;
       }
    }
