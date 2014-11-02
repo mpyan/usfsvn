@@ -2,6 +2,9 @@
  * Purpose:   Find all primes less than or equal to an input value.
  *
  * Compile:   mpicc -g -Wall -o prog4 prog4.c
+ * 
+ *            or to debug,
+ *            mpicc -g -Wall -o prog4 prog4.c -DDEBUG
  * Run:       
  *
  * Input:     
@@ -17,7 +20,7 @@
 const int RMAX = 100;
 const int STRING_MAX = 10000;
 
-void Print_list(int list[], int n, int my_rank);
+void Print_list(char* text, int list[], int n, int my_rank);
 int Is_prime(int i);
 
 void Update_counts(int* counts, int n, unsigned bitmask){
@@ -79,54 +82,34 @@ void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
    *asize = csize;
 }  /* Merge */
 
-void Primes(int* prime_arr, n){
-
-}
-
-int main(int argc, char* argv[]) {
-   int my_rank, n, i, p;
-   int local_n;
-   MPI_Comm comm;
-
-   /* arrays */
-   int* prime_arr = NULL; /* primes */
+void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
+   int* prime_arr = NULL;
+   int local_n, i;
    int* recv_arr = NULL; /* received primes */
    int* temp_arr = NULL; /* temporary storage */
 
    int* prime_count = NULL; /* Store each process's number of primes */
-   MPI_Init(&argc, &argv);
-   comm = MPI_COMM_WORLD;
 
-   MPI_Comm_rank(comm, &my_rank);
-   MPI_Comm_size(comm, &p);
-
-   /* Get and broadcast n */
-   n = strtol(argv[1], NULL, 10);
-   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
-
-   /* Start doing stuff */
    local_n = 0;
-	prime_arr = malloc(((n/(2*p))+2)*sizeof(int));
-	if (my_rank == 0){
-		prime_arr[0] = 2;
-		local_n = 1;
-	}
-	/* Cyclic distribution and checking of values */
-	for (i = 2*my_rank + 3; i < n; i+=2*p){
+   prime_arr = malloc((((*n)/(2*p))+2)*sizeof(int));
+   if (my_rank == 0){
+      prime_arr[0] = 2;
+      local_n = 1;
+   }
+   /* Cyclic distribution and checking of values */
+   for (i = 2*my_rank + 3; i < *n; i+=2*p){
       if (Is_prime(i)){
          prime_arr[local_n] = i;
          local_n++;
       }
-	}
-
-	/* Print debug info for Search */
-	// Print_list(prime_arr, local_n, my_rank);
+   }
+#  ifdef DEBUG
+   Print_list("After search primes are ", prime_arr, local_n, my_rank);
+#  endif
 
    /* Allgather */
    prime_count = malloc(p*sizeof(int));
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
-
-   // Print_list(prime_count, p, my_rank);
 
    /* Distributed Mergesort */
    int partner;
@@ -137,8 +120,6 @@ int main(int argc, char* argv[]) {
    while (!done && bitmask < p){
       partner = my_rank ^ bitmask;
       my_pass++;
-      // printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n",
-      // my_rank, partner, bitmask, my_pass);
       if (my_rank < partner){
          if (partner < p){
             /* receive */
@@ -149,6 +130,11 @@ int main(int argc, char* argv[]) {
 
             /* Merge */
             Merge(&prime_arr, &local_n, recv_arr, prime_count[partner], &temp_arr);
+#           ifdef DEBUG
+            char message[STRING_MAX];
+            sprintf(message, "After Phase %d, primes are ", my_pass);
+            Print_list(message, prime_arr, local_n, my_rank);
+#           endif
          }
          Update_counts(prime_count, p, bitmask);
          bitmask <<= 1;
@@ -158,9 +144,33 @@ int main(int argc, char* argv[]) {
          done = 1;
       }
    }
+   *n = local_n;
+   *primes = prime_arr;
+}
+
+int main(int argc, char* argv[]) {
+   int my_rank, n, p;
+   
+   MPI_Comm comm;
+
+   /* arrays */
+   int* prime_arr = NULL; /* primes */
+   
+   MPI_Init(&argc, &argv);
+   comm = MPI_COMM_WORLD;
+
+   MPI_Comm_rank(comm, &my_rank);
+   MPI_Comm_size(comm, &p);
+
+   /* Get and broadcast n */
+   if (my_rank == 0)
+      n = strtol(argv[1], NULL, 10);
+   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
+
+   Primes(&prime_arr, &n, p, my_rank, comm);
 
    if(my_rank == 0)
-      Print_list(prime_arr, local_n, 0);
+      Print_list("Result: ", prime_arr, n, 0);
 
 	free(prime_arr);
 	MPI_Finalize();
@@ -177,12 +187,12 @@ int main(int argc, char* argv[]) {
  *            n:  the number of ints
  *            my_rank:  the usual MPI variable
  */
-void Print_list(int list[], int n, int my_rank) {
+void Print_list(char* text, int list[], int n, int my_rank) {
    char string[STRING_MAX];
    char* s_p;
    int i;
 
-   sprintf(string, "Proc %d > ", my_rank);
+   sprintf(string, "Proc %d > %s", my_rank, text);
    // Pointer arithmetic:  make s_p point to the character strlen(string)
    // into string; i.e., make it point at the `\0'
    s_p = string + strlen(string);
