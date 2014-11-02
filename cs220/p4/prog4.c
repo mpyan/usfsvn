@@ -21,7 +21,7 @@ void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
 int main(int argc, char* argv[]) {
-   int my_rank, n, i, j, p;
+   int my_rank, n, i, j, p; /* j is like a "local_n" */
    MPI_Comm comm;
 
    /* arrays */
@@ -47,10 +47,12 @@ int main(int argc, char* argv[]) {
 		prime_arr[0] = 2;
 		j = 1;
 	}
-	/* Cyclic distribution of values to check */
+	/* Cyclic distribution and checking of values */
 	for (i = 2*my_rank + 3; i < n; i+=2*p){
-		prime_arr[j] = i;
-		j++;
+      if (Is_prime(i)){
+         prime_arr[j] = i;
+         j++;
+      }
 	}
 
 	/* Print debug info for Search */
