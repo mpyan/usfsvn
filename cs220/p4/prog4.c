@@ -21,7 +21,8 @@ void Print_list(int list[], int n, int my_rank);
 int Is_prime(int i);
 
 int main(int argc, char* argv[]) {
-   int my_rank, n, i, j, p; /* j is like a "local_n" */
+   int my_rank, n, i, j, p;
+   int local_n;
    MPI_Comm comm;
 
    /* arrays */
@@ -41,22 +42,52 @@ int main(int argc, char* argv[]) {
    MPI_Bcast(&n, 1, MPI_INT, 0, comm);
 
    /* Start doing stuff */
-   j = 0;
+   local_n = 0;
 	prime_arr = malloc(((n/(2*p))+2)*sizeof(int));
 	if (my_rank == 0){
 		prime_arr[0] = 2;
-		j = 1;
+		local_n = 1;
 	}
 	/* Cyclic distribution and checking of values */
 	for (i = 2*my_rank + 3; i < n; i+=2*p){
       if (Is_prime(i)){
-         prime_arr[j] = i;
-         j++;
+         prime_arr[local_n] = i;
+         local_n++;
       }
 	}
 
 	/* Print debug info for Search */
-	Print_list(prime_arr, j, my_rank);
+	Print_list(prime_arr, local_n, my_rank);
+
+   /* Allgather */
+   prime_count = malloc(p*sizeof(int));
+   MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
+
+   Print_list(prime_count, p, my_rank);
+
+   /* Distributed Mergesort */
+   // int partner;
+   // int done = 0;
+   // unsigned bitmask = (unsigned) 1;
+   // printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n", 
+   //      my_rank, partner, bitmask, my_pass);
+   // fflush(stdout);
+   // while(!done && bitmask < p){
+   //    printf("Proc %d > partner = %d, bitmask = %d, pass = %d\n", 
+   //         my_rank, partner, bitmask, my_pass);
+   //    fflush(stdout);
+   //    if (my_rank < partner) {
+   //          if (partner < p) {
+   //              MPI_Recv(&temp, 1, MPI_INT, partner, 0, comm, 
+   //                    MPI_STATUS_IGNORE);
+   //              sum += temp;
+   //          }
+   //          bitmask <<= 1;
+   //      } else {
+   //          MPI_Send(&sum, 1, MPI_INT, partner, 0, comm); 
+   //          done = 1;
+   //      }
+   // }
 
 	free(prime_arr);
 	MPI_Finalize();
