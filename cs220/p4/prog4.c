@@ -39,6 +39,37 @@ void Update_counts(int* counts, int n, unsigned bitmask){
    }
 }
 
+void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
+   int max_primes = counts_arr[my_rank];
+   int max_recv = 0;
+   int partner;
+   int done = 0;
+   unsigned bitmask = (unsigned) 1;
+   int* counts = malloc(n*sizeof(int));
+
+   int i;
+   for (i = 0; i < n; i++){
+      counts[i] = counts_arr[i];
+   }
+
+   while (!done && bitmask < n){
+      partner = my_rank ^ bitmask;
+      if (my_rank < partner){
+         if (partner < n){
+            max_primes += counts[partner];
+            if (counts[partner] > max_recv)
+               max_recv = counts[partner];
+         }
+         Update_counts(counts, n, bitmask);
+         bitmask <<= 1;
+      } else {
+         done = 1;
+      }
+   }
+   printf("Proc %d > Max primes = %d, max receive = %d\n",
+      my_rank, max_primes, max_recv);
+}
+
 /*-------------------------------------------------------------------
  * Function:   Merge
  * Purpose:    Merge the contents of the arrays A and B into array C
@@ -110,6 +141,9 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    /* Allgather */
    prime_count = malloc(p*sizeof(int));
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
+   #ifdef DEBUG
+   Print_max_primes_recv(prime_count, p, my_rank);
+   #endif
 
    /* Distributed Mergesort */
    int partner;
