@@ -48,11 +48,14 @@ void Update_counts(int* counts, int n, unsigned bitmask){
  * Output arg:
  *    C:  result array
  */
-void Merge(int A[], int asize, int B[], int bsize, int C[], int csize) {
+void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
    int ai, bi, ci;
+   int* A = *A_p;
+   int* C = *C_p;
+   int csize = *asize + bsize;
    
    ai = bi = ci = 0;
-   while (ai < asize && bi < bsize) {
+   while (ai < *asize && bi < bsize) {
       if (A[ai] <= B[bi]) {
          C[ci] = A[ai];
          ci++; ai++;
@@ -62,13 +65,23 @@ void Merge(int A[], int asize, int B[], int bsize, int C[], int csize) {
       }
    }
 
-   if (ai >= asize)
+   if (ai >= *asize)
       for (; ci < csize; ci++, bi++)
          C[ci] = B[bi];
    else
       for (; ci < csize; ci++, ai++)
          C[ci] = A[ai];
+
+   /* Swap pointers */
+   int* swapper = *A_p;
+   *A_p = *C_p;
+   *C_p = swapper;
+   *asize = csize;
 }  /* Merge */
+
+void Primes(int* prime_arr, n){
+
+}
 
 int main(int argc, char* argv[]) {
    int my_rank, n, i, p;
@@ -107,7 +120,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	/* Print debug info for Search */
-	Print_list(prime_arr, local_n, my_rank);
+	// Print_list(prime_arr, local_n, my_rank);
 
    /* Allgather */
    prime_count = malloc(p*sizeof(int));
@@ -128,22 +141,14 @@ int main(int argc, char* argv[]) {
       // my_rank, partner, bitmask, my_pass);
       if (my_rank < partner){
          if (partner < p){
-            int new_n = local_n + prime_count[partner];
             /* receive */
             recv_arr = malloc(prime_count[partner]*sizeof(int));
-            temp_arr = malloc(new_n*sizeof(int));
+            temp_arr = malloc((local_n + prime_count[partner])*sizeof(int));
             MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
                0, comm, MPI_STATUS_IGNORE);
 
             /* Merge */
-            Merge(prime_arr, local_n, recv_arr, prime_count[partner], temp_arr,
-               new_n);
-            /* swap the pointers */
-            int* swapper = prime_arr;
-            prime_arr = temp_arr;
-            temp_arr = swapper;
-            local_n = new_n;
-            // memcpy(prime_arr, temp_arr, new_n);
+            Merge(&prime_arr, &local_n, recv_arr, prime_count[partner], &temp_arr);
          }
          Update_counts(prime_count, p, bitmask);
          bitmask <<= 1;
