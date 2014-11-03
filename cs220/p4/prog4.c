@@ -22,6 +22,80 @@ const int STRING_MAX = 10000;
 
 void Print_list(char* text, int list[], int n, int my_rank);
 int Is_prime(int i);
+void Update_counts(int* counts, int n, unsigned bitmask);
+void Print_max_primes_recv(int* counts_arr, int n, int my_rank);
+void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p);
+
+void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm);
+
+int main(int argc, char* argv[]) {
+   int my_rank, n, p;
+   MPI_Comm comm;
+   int* prime_arr = NULL; /* primes */
+   
+   MPI_Init(&argc, &argv);
+   comm = MPI_COMM_WORLD;
+
+   MPI_Comm_rank(comm, &my_rank);
+   MPI_Comm_size(comm, &p);
+
+   /* Get and broadcast n */
+   if (my_rank == 0)
+      n = strtol(argv[1], NULL, 10);
+   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
+
+   Primes(&prime_arr, &n, p, my_rank, comm);
+
+   if(my_rank == 0)
+      Print_list("Result: ", prime_arr, n, 0);
+
+	free(prime_arr);
+	MPI_Finalize();
+   return 0;
+}  /* main */
+
+/*-------------------------------------------------------------------
+ * Function:  Print_list
+ * Purpose:   Convert a list of ints to a single string before
+ *            printing.  This should make it less likely that the
+ *            output is interrupted by another process.  This is
+ *            mainly intended for debugging purposes.
+ * In args:   list:  the ints to be printed
+ *            n:  the number of ints
+ *            my_rank:  the usual MPI variable
+ */
+void Print_list(char* text, int list[], int n, int my_rank) {
+   char string[STRING_MAX];
+   char* s_p;
+   int i;
+
+   sprintf(string, "Proc %d > %s", my_rank, text);
+   // Pointer arithmetic:  make s_p point to the character strlen(string)
+   // into string; i.e., make it point at the `\0'
+   s_p = string + strlen(string);
+   for (i = 0; i < n; i++) {
+      sprintf(s_p, "%d ", list[i]);
+      s_p = string + strlen(string);
+   }
+
+   printf("%s\n", string);
+   fflush(stdout);
+}  /* Print_list */
+
+/*-------------------------------------------------------------------
+ * Function:   Is_prime
+ * Purpose:    Determine whether the argument is prime
+ * Input arg:  i
+ * Return val: true (nonzero) if arg is prime, false (zero) otherwise
+ */
+int Is_prime(int i) {
+   int j;
+
+   for (j = 2; j <= sqrt(i); j++)
+      if (i % j == 0)
+         return 0;
+   return 1;
+}  /* Is_prime */
 
 void Update_counts(int* counts, int n, unsigned bitmask){
    int i_rank;
@@ -37,7 +111,7 @@ void Update_counts(int* counts, int n, unsigned bitmask){
          counts[i_rank] = 0;
       }
    }
-}
+} /* Update_counts */
 
 void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
    int max_primes = counts_arr[my_rank];
@@ -68,7 +142,8 @@ void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
    }
    printf("Proc %d > Max primes = %d, max receive = %d\n",
       my_rank, max_primes, max_recv);
-}
+   free(counts);
+} /* Print_max_primes_recv */
 
 /*-------------------------------------------------------------------
  * Function:   Merge
@@ -141,9 +216,9 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    /* Allgather */
    prime_count = malloc(p*sizeof(int));
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
-   #ifdef DEBUG
+#  ifdef DEBUG
    Print_max_primes_recv(prime_count, p, my_rank);
-   #endif
+#  endif
 
    /* Distributed Mergesort */
    int partner;
@@ -164,11 +239,14 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
 
             /* Merge */
             Merge(&prime_arr, &local_n, recv_arr, prime_count[partner], &temp_arr);
+
 #           ifdef DEBUG
             char message[STRING_MAX];
             sprintf(message, "After Phase %d, primes are ", my_pass);
             Print_list(message, prime_arr, local_n, my_rank);
 #           endif
+            free(recv_arr);
+            free(temp_arr);
          }
          Update_counts(prime_count, p, bitmask);
          bitmask <<= 1;
@@ -180,76 +258,4 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    }
    *n = local_n;
    *primes = prime_arr;
-}
-
-int main(int argc, char* argv[]) {
-   int my_rank, n, p;
-   
-   MPI_Comm comm;
-
-   /* arrays */
-   int* prime_arr = NULL; /* primes */
-   
-   MPI_Init(&argc, &argv);
-   comm = MPI_COMM_WORLD;
-
-   MPI_Comm_rank(comm, &my_rank);
-   MPI_Comm_size(comm, &p);
-
-   /* Get and broadcast n */
-   if (my_rank == 0)
-      n = strtol(argv[1], NULL, 10);
-   MPI_Bcast(&n, 1, MPI_INT, 0, comm);
-
-   Primes(&prime_arr, &n, p, my_rank, comm);
-
-   if(my_rank == 0)
-      Print_list("Result: ", prime_arr, n, 0);
-
-	free(prime_arr);
-	MPI_Finalize();
-   return 0;
-}  /* main */
-
-/*-------------------------------------------------------------------
- * Function:  Print_list
- * Purpose:   Convert a list of ints to a single string before
- *            printing.  This should make it less likely that the
- *            output is interrupted by another process.  This is
- *            mainly intended for debugging purposes.
- * In args:   list:  the ints to be printed
- *            n:  the number of ints
- *            my_rank:  the usual MPI variable
- */
-void Print_list(char* text, int list[], int n, int my_rank) {
-   char string[STRING_MAX];
-   char* s_p;
-   int i;
-
-   sprintf(string, "Proc %d > %s", my_rank, text);
-   // Pointer arithmetic:  make s_p point to the character strlen(string)
-   // into string; i.e., make it point at the `\0'
-   s_p = string + strlen(string);
-   for (i = 0; i < n; i++) {
-      sprintf(s_p, "%d ", list[i]);
-      s_p = string + strlen(string);
-   }
-
-   printf("%s\n", string);
-   fflush(stdout);
-}  /* Print_list */
-
-/*-------------------------------------------------------------------
- * Function:   Is_prime
- * Purpose:    Determine whether the argument is prime
- * Input arg:  i
- * Return val: true (nonzero) if arg is prime, false (zero) otherwise
- */
-int Is_prime(int i) {
-   int j;
-
-   for (j = 2; j <= sqrt(i); j++)
-      if (i % j == 0)
-         return 0;
-   return 1;
-}  /* Is_prime */
+} /* Primes */
