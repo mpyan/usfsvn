@@ -1,10 +1,10 @@
 /* File:      prog4.c
  * Purpose:   Find all primes less than or equal to an input value.
  *
- * Compile:   mpicc -g -Wall -o prog4 prog4.c
+ * Compile:   mpicc -g -Wall -o prog4 prog4.c -lm
  * 
  *            or to debug,
- *            mpicc -g -Wall -o prog4 prog4.c -DDEBUG
+ *            mpicc -g -Wall -o prog4 prog4.c -lm -DDEBUG
  * Run:       
  *
  * Input:     
@@ -23,13 +23,14 @@ const int STRING_MAX = 10000;
 void Print_list(char* text, int list[], int n, int my_rank);
 int Is_prime(int i);
 void Update_counts(int* counts, int n, unsigned bitmask);
-void Print_max_primes_recv(int* counts_arr, int n, int my_rank);
 void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p);
+void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
+   int n, int my_rank);
 
 void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm);
 
 int main(int argc, char* argv[]) {
-   int my_rank, n, p;
+   int my_rank, n, p, i;
    MPI_Comm comm;
    int* prime_arr = NULL; /* primes */
    
@@ -46,8 +47,12 @@ int main(int argc, char* argv[]) {
 
    Primes(&prime_arr, &n, p, my_rank, comm);
 
-   if(my_rank == 0)
-      Print_list("Result: ", prime_arr, n, 0);
+   if(my_rank == 0) {
+      for (i = 0; i < n; i++){
+         printf("%d ", prime_arr[i]);
+      }
+      printf("\n");
+   }
 
 	free(prime_arr);
 	MPI_Finalize();
@@ -113,12 +118,14 @@ void Update_counts(int* counts, int n, unsigned bitmask){
    }
 } /* Update_counts */
 
-void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
-   int max_primes = counts_arr[my_rank];
-   int max_recv = 0;
+void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
+   int n, int my_rank){
+
    int partner;
    int done = 0;
    unsigned bitmask = (unsigned) 1;
+   *max_primes = counts_arr[my_rank];
+   *max_recv = 0;
    int* counts = malloc(n*sizeof(int));
 
    int i;
@@ -126,13 +133,13 @@ void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
       counts[i] = counts_arr[i];
    }
 
-   while (!done && bitmask < n){
+   while ((!done) && (bitmask < n)){
       partner = my_rank ^ bitmask;
       if (my_rank < partner){
          if (partner < n){
-            max_primes += counts[partner];
-            if (counts[partner] > max_recv)
-               max_recv = counts[partner];
+            *max_primes += counts[partner];
+            if (counts[partner] > *max_recv)
+               *max_recv = counts[partner];
          }
          Update_counts(counts, n, bitmask);
          bitmask <<= 1;
@@ -140,10 +147,14 @@ void Print_max_primes_recv(int* counts_arr, int n, int my_rank){
          done = 1;
       }
    }
-   printf("Proc %d > Max primes = %d, max receive = %d\n",
-      my_rank, max_primes, max_recv);
    free(counts);
-} /* Print_max_primes_recv */
+
+#  ifdef DEBUG
+   /* print max storage and max receive */
+   printf("Proc %d > Max primes = %d, max receive = %d\n",
+      my_rank, *max_primes, *max_recv);
+#  endif
+}
 
 /*-------------------------------------------------------------------
  * Function:   Merge
@@ -190,7 +201,7 @@ void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
 
 void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    int* prime_arr = NULL;
-   int local_n, i;
+   int local_n, i, max_primes, max_recv;
    int* recv_arr = NULL; /* received primes */
    int* temp_arr = NULL; /* temporary storage */
 
@@ -216,9 +227,11 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    /* Allgather */
    prime_count = malloc(p*sizeof(int));
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
-#  ifdef DEBUG
-   Print_max_primes_recv(prime_count, p, my_rank);
-#  endif
+   Get_max_primes_recv(prime_count, &max_primes, &max_recv, p, my_rank);
+
+   /* Calculate array sizes */
+   recv_arr = malloc(max_recv*sizeof(int));
+   temp_arr = malloc(max_primes*sizeof(int));
 
    /* Distributed Mergesort */
    int partner;
@@ -232,8 +245,6 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
       if (my_rank < partner){
          if (partner < p){
             /* receive */
-            recv_arr = malloc(prime_count[partner]*sizeof(int));
-            temp_arr = malloc((local_n + prime_count[partner])*sizeof(int));
             MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
                0, comm, MPI_STATUS_IGNORE);
 
@@ -245,8 +256,6 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
             sprintf(message, "After Phase %d, primes are ", my_pass);
             Print_list(message, prime_arr, local_n, my_rank);
 #           endif
-            free(recv_arr);
-            free(temp_arr);
          }
          Update_counts(prime_count, p, bitmask);
          bitmask <<= 1;
@@ -258,4 +267,6 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    }
    *n = local_n;
    *primes = prime_arr;
+   free(recv_arr);
+   free(temp_arr);
 } /* Primes */
