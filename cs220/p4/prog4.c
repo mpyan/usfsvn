@@ -275,6 +275,9 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    }
    *n = local_n;
    *primes = prime_arr;
+   printf("done merging\n");
    free(recv_arr);
+   printf("recv_arr freed\n");
    free(temp_arr);
+   printf("temp_arr freed\n");
 } /* Primes */
