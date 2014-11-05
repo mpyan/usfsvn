@@ -134,7 +134,7 @@ void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
    for (i = 0; i < n; i++){
       counts[i] = counts_arr[i];
    }
-   int pass = 0;
+
    while ((!done) && (bitmask < n)){
       partner = my_rank ^ bitmask;
       if (my_rank < partner){
@@ -148,12 +148,6 @@ void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
       } else {
          done = 1;
       }
-      #ifdef DEBUG
-         /* my own debug */
-         printf("Proc %d > Max primes = %d, max receive = %d, partner = %d, counts[partner] = %d, pass = %d\n",
-      my_rank, *max_primes, *max_recv, partner, counts[partner], pass);
-         pass++;
-         #endif
    }
    free(counts);
 
