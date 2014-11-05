@@ -5,7 +5,9 @@
  * 
  *            or to debug,
  *            mpicc -g -Wall -o prog4 prog4.c -lm -DDEBUG
- * Run:       
+ * Run:       mpiexec -n <number of processes> ./prog4 <n>
+ *
+ *            n: any positive integer
  *
  * Input:     
  * Output:    
