@@ -105,7 +105,7 @@ int Is_prime(int i) {
 void Update_counts(int* counts, int n, unsigned bitmask){
    int i_rank;
    int partner;
-   if (bitmask < n){
+   if ((bitmask << 1) < n){
       for (i_rank = 0; i_rank < n; i_rank++){
          partner = i_rank ^ bitmask;
          if (i_rank < partner){
