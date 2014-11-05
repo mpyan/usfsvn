@@ -145,15 +145,15 @@ void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
          }
          Update_counts(counts, n, bitmask);
          bitmask <<= 1;
-         #ifdef DEBUG
-         /* my own debug */
-         printf("Proc %d > Max primes = %d, max receive = %d, partner = %d, pass = %d\n",
-      my_rank, *max_primes, *max_recv, partner, pass);
-         pass++;
-         #endif
       } else {
          done = 1;
       }
+      #ifdef DEBUG
+         /* my own debug */
+         printf("Proc %d > Max primes = %d, max receive = %d, partner = %d, counts[partner] = %d, pass = %d\n",
+      my_rank, *max_primes, *max_recv, partner, counts[partner], pass);
+         pass++;
+         #endif
    }
    free(counts);
 
