@@ -212,18 +212,19 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    int* prime_count = NULL; /* Store each process's number of primes */
 
    local_n = 0;
-   prime_arr = malloc((((*n)/(2*p))+2)*sizeof(int));
+   int* init_prime_arr = malloc((((*n)/(2*p))+2)*sizeof(int));
    if (my_rank == 0){
-      prime_arr[0] = 2;
+      init_prime_arr[0] = 2;
       local_n = 1;
    }
    /* Cyclic distribution and checking of values */
    for (i = 2*my_rank + 3; i < *n; i+=2*p){
       if (Is_prime(i)){
-         prime_arr[local_n] = i;
+         init_prime_arr[local_n] = i;
          local_n++;
       }
    }
+
 #  ifdef DEBUG
    Print_list("After search primes are ", prime_arr, local_n, my_rank);
 #  endif
@@ -236,6 +237,11 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    /* Calculate array sizes */
    recv_arr = malloc(max_recv*sizeof(int));
    temp_arr = malloc(max_primes*sizeof(int));
+   prime_arr = malloc(max_primes*sizeof(int));
+   for (i = 0; i < local_n; i++){
+      prime_arr[i] = init_prime_arr[i];
+   }
+   free(init_prime_arr);
 
    /* Distributed Mergesort */
    int partner;
@@ -271,9 +277,11 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    }
    *n = local_n;
    *primes = prime_arr;
-   printf("Proc %d > done merging\n", my_rank);
+   // printf("Proc %d > done merging\n", my_rank);
    free(recv_arr);
-   printf("Proc %d > recv_arr freed\n", my_rank);
+   // printf("Proc %d > recv_arr freed\n", my_rank);
+   // int abc = sizeof(temp_arr)/sizeof(temp_arr[0]);
+   // printf("--Proc %d > temp_arr size = %d\n", my_rank, abc);
    free(temp_arr);
-   printf("Proc %d > temp_arr freed\n", my_rank);
+   // printf("Proc %d > temp_arr freed\n", my_rank);
 } /* Primes */
