@@ -10,6 +10,15 @@
  * Input:    none
  * Output:   Total number of times semaphore was locked and 
  *           elapsed time for the threads
+ *
+ * Results:  Minimum Runtimes in Seconds
+ *
+ *                   Mutex             Semaphores
+ * Penguin Cluster   8.894100E-01      4.094181E+00              
+ * CS Lab Machine    8.782079E-01      1.820614E+00
+ *
+ * Note: each program was run 10 times in each environment,
+ *       using 4 threads and n = 1,000,000.
  */
 
 #include <stdio.h>
