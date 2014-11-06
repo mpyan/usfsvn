@@ -226,7 +226,7 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    }
 
 #  ifdef DEBUG
-   Print_list("After search primes are ", prime_arr, local_n, my_rank);
+   Print_list("After search primes are ", init_prime_arr, local_n, my_rank);
 #  endif
 
    /* Allgather */
