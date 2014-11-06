@@ -29,6 +29,9 @@ void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p);
 void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
    int n, int my_rank);
 
+void Dist_merge_sort(int** prime_arr_p, int* recv_arr, int** temp_arr_p, 
+   int* prime_count, int* local_n_p, int p, int my_rank, MPI_Comm comm);
+
 void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm);
 
 int main(int argc, char* argv[]) {
@@ -49,6 +52,7 @@ int main(int argc, char* argv[]) {
 
    Primes(&prime_arr, &n, p, my_rank, comm);
 
+   /* Print out the result */
    if(my_rank == 0) {
       for (i = 0; i < n; i++){
          printf("%d ", prime_arr[i]);
@@ -203,6 +207,45 @@ void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
    *asize = csize;
 }  /* Merge */
 
+void Dist_merge_sort(int** prime_arr_p, int* recv_arr, int** temp_arr_p, 
+   int* prime_count, int* local_n_p, int p, int my_rank, MPI_Comm comm){
+   int partner;
+   int done = 0;
+   unsigned bitmask = (unsigned) 1;
+#  ifdef DEBUG
+   int my_pass = -1;
+#  endif
+
+   while (!done && bitmask < p){
+      partner = my_rank ^ bitmask;
+#     ifdef DEBUG
+      my_pass++;
+#     endif
+      if (my_rank < partner){
+         if (partner < p){
+            /* receive */
+            MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
+               0, comm, MPI_STATUS_IGNORE);
+
+            /* Merge */
+            Merge(prime_arr_p, local_n_p, recv_arr, prime_count[partner], temp_arr_p);
+
+#           ifdef DEBUG
+            char message[STRING_MAX];
+            sprintf(message, "After Phase %d, primes are ", my_pass);
+            Print_list(message, *prime_arr_p, *local_n_p, my_rank);
+#           endif
+         }
+         Update_counts(prime_count, p, bitmask);
+         bitmask <<= 1;
+      } else {
+         /* send */
+         MPI_Send(*prime_arr_p, *local_n_p, MPI_INT, partner, 0, comm);
+         done = 1;
+      }
+   }
+} /* Dist_merge_sort */
+
 void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    int* prime_arr = NULL;
    int local_n, i, max_primes, max_recv;
@@ -217,6 +260,7 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
       init_prime_arr[0] = 2;
       local_n = 1;
    }
+   
    /* Cyclic distribution and checking of values */
    for (i = 2*my_rank + 3; i < *n; i+=2*p){
       if (Is_prime(i)){
@@ -244,44 +288,12 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    free(init_prime_arr);
 
    /* Distributed Mergesort */
-   int partner;
-   int done = 0;
-   unsigned bitmask = (unsigned) 1;
-   int my_pass = -1;
+   Dist_merge_sort(&prime_arr, recv_arr, &temp_arr, prime_count, &local_n,
+      p, my_rank, comm);
 
-   while (!done && bitmask < p){
-      partner = my_rank ^ bitmask;
-      my_pass++;
-      if (my_rank < partner){
-         if (partner < p){
-            /* receive */
-            MPI_Recv(recv_arr, prime_count[partner], MPI_INT, partner, 
-               0, comm, MPI_STATUS_IGNORE);
-
-            /* Merge */
-            Merge(&prime_arr, &local_n, recv_arr, prime_count[partner], &temp_arr);
-
-#           ifdef DEBUG
-            char message[STRING_MAX];
-            sprintf(message, "After Phase %d, primes are ", my_pass);
-            Print_list(message, prime_arr, local_n, my_rank);
-#           endif
-         }
-         Update_counts(prime_count, p, bitmask);
-         bitmask <<= 1;
-      } else {
-         /* send */
-         MPI_Send(prime_arr, local_n, MPI_INT, partner, 0, comm);
-         done = 1;
-      }
-   }
    *n = local_n;
    *primes = prime_arr;
-   // printf("Proc %d > done merging\n", my_rank);
+   free(prime_count);
    free(recv_arr);
-   // printf("Proc %d > recv_arr freed\n", my_rank);
-   // int abc = sizeof(temp_arr)/sizeof(temp_arr[0]);
-   // printf("--Proc %d > temp_arr size = %d\n", my_rank, abc);
    free(temp_arr);
-   // printf("Proc %d > temp_arr freed\n", my_rank);
 } /* Primes */
