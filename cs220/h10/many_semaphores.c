@@ -14,7 +14,7 @@
  * Results:  Minimum Runtimes in Seconds
  *
  *                   Mutex             Semaphores
- * Penguin Cluster   8.894100E-01      4.094181E+00              
+ * Penguin Cluster   6.938388E-01      3.528852E+00              
  * CS Lab Machine    8.782079E-01      1.820614E+00
  *
  * Note: each program was run 10 times in each environment,
