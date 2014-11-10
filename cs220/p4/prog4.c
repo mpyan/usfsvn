@@ -197,7 +197,7 @@ void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
    printf("Proc %d > Max primes = %d, max receive = %d\n",
       my_rank, *max_primes, *max_recv);
 #  endif
-}
+} /* Get_max_primes_recv */
 
 /*-------------------------------------------------------------------
  * Function:   Merge
