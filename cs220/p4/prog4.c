@@ -1,16 +1,17 @@
 /* File:      prog4.c
  * Purpose:   Find all primes less than or equal to an input value.
  *
+ * Input:     n:  integer >= 2 (from command line)
+ * Output:    Sorted list of primes between 2 and n
+ *
  * Compile:   mpicc -g -Wall -o prog4 prog4.c -lm
  * 
  *            or to debug,
  *            mpicc -g -Wall -o prog4 prog4.c -lm -DDEBUG
- * Run:       mpiexec -n <number of processes> ./prog4 <n>
  *
- *            n: any positive integer
+ * Usage:     mpiexec -n <number of processes> ./prog4 <n>
+ *              n: max int to test for primality
  *
- * Input:     
- * Output:    
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +22,7 @@
 /* Ints in the lists will be between 0 and 100 */
 const int STRING_MAX = 10000;
 
+void Usage(char prog[], int my_rank);
 void Print_list(char* text, int list[], int n, int my_rank);
 int Is_prime(int i);
 void Update_counts(int* counts, int n, unsigned bitmask);
@@ -37,7 +39,7 @@ int main(int argc, char* argv[]) {
    int my_rank, n, p, i;
    MPI_Comm comm;
    int* prime_arr = NULL; /* Array to store primes */
-   
+
    MPI_Init(&argc, &argv);
    comm = MPI_COMM_WORLD;
 
@@ -45,6 +47,7 @@ int main(int argc, char* argv[]) {
    MPI_Comm_size(comm, &p);
 
    /* Get and broadcast n */
+   if (argc != 2) Usage(argv[0], my_rank);
    if (my_rank == 0)
       n = strtol(argv[1], NULL, 10);
    MPI_Bcast(&n, 1, MPI_INT, 0, comm);
@@ -63,6 +66,21 @@ int main(int argc, char* argv[]) {
 	MPI_Finalize();
    return 0;
 }  /* main */
+
+/*-------------------------------------------------------------------
+ * Function:  Usage
+ * Purpose:   Print a brief message explaining how the program is run.
+ *            The quit.
+ * In arg:    prog:  name of the executable
+ *            my_rank: process rank
+ */
+void Usage(char prog[], int my_rank) {
+   if (my_rank == 0){
+      fprintf(stderr, "usage: %s <n>\n", prog);
+      fprintf(stderr, "   n = max integer to test for primality\n");
+   }
+   exit(0);
+}  /* Usage */
 
 /*-------------------------------------------------------------------
  * Function:  Print_list
@@ -107,6 +125,15 @@ int Is_prime(int i) {
    return 1;
 }  /* Is_prime */
 
+/*-------------------------------------------------------------------
+ * Function:   Update_counts
+ * Purpose:    Update the array storing the counts (number of primes
+ *             in each process)
+ * In/out arg: counts:  the array storing the numbers of primes each
+ *                      process has
+ * Input args: n:       the number of elements in the counts array
+ *             bitmask: the current bitmask to use
+ */
 void Update_counts(int* counts, int n, unsigned bitmask){
    int i_rank;
    int partner;
@@ -122,6 +149,18 @@ void Update_counts(int* counts, int n, unsigned bitmask){
    }
 } /* Update_counts */
 
+/*-------------------------------------------------------------------
+ * Function:   Get_max_primes_recv
+ * Purpose:    Determine the maximum number of primes
+ *             that each process will store and receive
+ * Input args: counts_arr: the array storing the prime counts
+ *             n:          the number of elements in counts_arr
+ *             my_rank:    the process rank
+ * 
+ * Output args: max_primes: the maximum number of primes to store
+ *              max_recv:   the maximum number of primes that will
+ *                          be received
+ */
 void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
    int n, int my_rank){
 
@@ -162,21 +201,21 @@ void Get_max_primes_recv(int* counts_arr, int* max_primes, int* max_recv,
 
 /*-------------------------------------------------------------------
  * Function:   Merge
- * Purpose:    Merge the contents of the arrays A and B into array C
- * Input args:
- *    asize:  the number of elements in A
- *    bsize:  the number of elements in B
- *    csize:  the number of elements in C (= asize + bsize)
- *    A, B:  the arrays
+ * Purpose:    Merge the contents of the array B into the array A
+ * In/out args:
+ *    A_p:   pointer to array A
+ *    asize: number of elements in A
+ *    C_p:   pointer to temporary array C
  *
- * Output arg:
- *    C:  result array
+ * Input args:
+ *    B:     the array to be merged into A
  */
 void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
    int ai, bi, ci;
    int* A = *A_p;
    int* C = *C_p;
    int csize = *asize + bsize;
+   int* swapper = NULL;
    
    ai = bi = ci = 0;
    while (ai < *asize && bi < bsize) {
@@ -197,12 +236,27 @@ void Merge(int** A_p, int* asize, int B[], int bsize, int** C_p) {
          C[ci] = A[ai];
 
    /* Swap pointers */
-   int* swapper = *A_p;
+   swapper = *A_p;
    *A_p = *C_p;
    *C_p = swapper;
    *asize = csize;
 }  /* Merge */
 
+/*-------------------------------------------------------------------
+ * Function:   Dist_merge_sort
+ * Purpose:    Perform a distributed merge-sort
+ * In/out args:
+ *    prime_arr_p: pointer to the array storing the current process's
+ *                 primes.
+ *    temp_arr_p:  pointer to the temporary array
+ *    local_n_p:   pointer to process's number of primes (local_n)
+ * Input args:
+ *    recv_arr:    array to store the received primes
+ *    prime_count: array storing each process's prime counts
+ *    p:           the total number of processes
+ *    my_rank:     current process's rank
+ *    comm:        the communicator
+ */
 void Dist_merge_sort(int** prime_arr_p, int* recv_arr, int** temp_arr_p, 
    int* prime_count, int* local_n_p, int p, int my_rank, MPI_Comm comm){
    int partner;
@@ -242,6 +296,19 @@ void Dist_merge_sort(int** prime_arr_p, int* recv_arr, int** temp_arr_p,
    }
 } /* Dist_merge_sort */
 
+/*-------------------------------------------------------------------
+ * Function:   Primes
+ * Purpose:    Determine the number of primes less than or equal to n
+ *             and store the result into the array "primes"
+ * In/out args:
+ *    primes:  pointer to the array storing the primes
+ *    n:       in:  the input value n
+ *             out: the total number of primes found
+ * Input args:
+ *    p:       the number of processes
+ *    my_rank: the current process's rank
+ *    comm:    the communicator
+ */
 void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    int* prime_arr = NULL;
    int local_n, i, max_primes, max_recv;
