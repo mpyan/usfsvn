@@ -18,8 +18,7 @@
 #include <math.h>
 #include <mpi.h>
 
-/* Ints in the lists will be between 0 and RMAX */
-const int RMAX = 100;
+/* Ints in the lists will be between 0 and 100 */
 const int STRING_MAX = 10000;
 
 void Print_list(char* text, int list[], int n, int my_rank);
@@ -37,7 +36,7 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm);
 int main(int argc, char* argv[]) {
    int my_rank, n, p, i;
    MPI_Comm comm;
-   int* prime_arr = NULL; /* primes */
+   int* prime_arr = NULL; /* Array to store primes */
    
    MPI_Init(&argc, &argv);
    comm = MPI_COMM_WORLD;
@@ -111,18 +110,15 @@ int Is_prime(int i) {
 void Update_counts(int* counts, int n, unsigned bitmask){
    int i_rank;
    int partner;
-   // if ((bitmask << 1) < n){
-      for (i_rank = 0; i_rank < n; i_rank++){
-         partner = i_rank ^ bitmask;
-         if (i_rank < partner){
-            if (i_rank < n && partner < n){
-               counts[i_rank] += counts[partner];
-            }
-         } else {
-            /* done */
-            counts[i_rank] = 0;
+   for (i_rank = 0; i_rank < n; i_rank++){
+      partner = i_rank ^ bitmask;
+      if (i_rank < partner){
+         if (i_rank < n && partner < n){
+            counts[i_rank] += counts[partner];
          }
-      // }
+      } else {
+         counts[i_rank] = 0; /* done */
+      }
    }
 } /* Update_counts */
 
@@ -260,7 +256,7 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
       init_prime_arr[0] = 2;
       local_n = 1;
    }
-   
+
    /* Cyclic distribution and checking of values */
    for (i = 2*my_rank + 3; i < *n; i+=2*p){
       if (Is_prime(i)){
@@ -278,7 +274,7 @@ void Primes(int** primes, int* n, int p, int my_rank, MPI_Comm comm){
    MPI_Allgather(&local_n, 1, MPI_INT, prime_count, 1, MPI_INT, comm);
    Get_max_primes_recv(prime_count, &max_primes, &max_recv, p, my_rank);
 
-   /* Calculate array sizes */
+   /* Allocate arrays */
    recv_arr = malloc(max_recv*sizeof(int));
    temp_arr = malloc(max_primes*sizeof(int));
    prime_arr = malloc(max_primes*sizeof(int));
