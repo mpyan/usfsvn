@@ -131,6 +131,9 @@ void* Thread_work(void* rank){
 	long partner;
 	int stage = 0;
 
+	/* Quicksort this thread's own stuff */
+	/* Barrier here */
+
 	while (bitmask > 0){
 		partner = my_rank ^ bitmask;
 		if ((my_rank & and_bit) == 0)
@@ -140,6 +143,7 @@ void* Thread_work(void* rank){
 		bitmask >>= 1;
 		and_bit <<= 1;
 		stage++;
+		/* Barrier here? */
 	}
 
 	return NULL;
