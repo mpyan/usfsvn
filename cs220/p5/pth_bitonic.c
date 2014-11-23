@@ -42,6 +42,14 @@ void Get_list(){
 	}
 }
 
+void Merge_inc(long my_rank, long partner, int stage){
+	printf("Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", stage, my_rank, partner);
+}
+
+void Merge_dec(long my_rank, long partner, int stage){
+	printf("Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", stage, my_rank, partner);
+}
+
 int main(int argc, char* argv[]) {
 	long thread;
 	pthread_t* thread_handles;
@@ -117,5 +125,22 @@ void Usage(char* prog_name) {
 
 void* Thread_work(void* rank){
 	long my_rank = (long) rank;
+
+	unsigned bitmask = (unsigned) thread_count >> 1;
+	unsigned and_bit = 2;
+	long partner;
+	int stage = 0;
+
+	while (bitmask > 0){
+		partner = my_rank ^ bitmask;
+		if ((my_rank & and_bit) == 0)
+			Merge_inc(my_rank, partner, stage);
+		else
+			Merge_dec(my_rank, partner, stage);
+		bitmask >>= 1;
+		and_bit <<= 1;
+		stage++;
+	}
+
 	return NULL;
 }
