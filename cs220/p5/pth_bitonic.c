@@ -146,5 +146,7 @@ void* Thread_work(void* rank){
 		/* Barrier here? */
 	}
 
+	/* Swap pointers of temp_list and good_list */
+
 	return NULL;
 }
