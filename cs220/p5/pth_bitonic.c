@@ -113,6 +113,8 @@ int main(int argc, char* argv[]) {
 	Print_list("result: ", good_list);
 
 	/* Free */
+	pthread_mutex_destroy(&barrier_mutex);
+	pthread_cond_destroy(&cond_var);
 	free(thread_handles);
 
 	return 0;
