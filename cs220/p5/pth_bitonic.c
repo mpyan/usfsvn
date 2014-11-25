@@ -25,6 +25,10 @@ int barrier_counter = 0;
 void Usage(char* prog_name);
 void* Thread_work(void* rank);
 int  Compare(const void* a_p, const void* b_p);
+void Merge_split_low(int local_A[], int temp_B[], int temp_C[], 
+         int local_n);
+void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
+        int local_n);
 void Print_list(char* text, int list[]){
 	int i;
 	printf("%s", text);
@@ -49,10 +53,26 @@ void Get_list(){
 
 void Merge_inc(long my_rank, long partner, int stage, unsigned macro_stage){
 	printf("Macro-stage: %d, (sub)Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
+	int local_n = n/thread_count;
+	int my_head = my_rank * local_n;
+	int partner_head = partner * local_n;
+	if (my_rank < partner){
+		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+	} else {
+		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+	}
 }
 
 void Merge_dec(long my_rank, long partner, int stage, unsigned macro_stage){
 	printf("Macro-stage: %d, (sub)Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
+	int local_n = n/thread_count;
+	int my_head = my_rank * local_n;
+	int partner_head = partner * local_n;
+	if (my_rank > partner){
+		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+	} else {
+		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+	}
 }
 
 int main(int argc, char* argv[]) {
@@ -116,6 +136,8 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_destroy(&barrier_mutex);
 	pthread_cond_destroy(&cond_var);
 	free(thread_handles);
+	free(good_list);
+	free(temp_list);
 
 	return 0;
 }
@@ -150,6 +172,64 @@ int Compare(const void* a_p, const void* b_p) {
       return 1;
 }  /* Compare */
 
+/*-------------------------------------------------------------------
+ * Function:    Merge_split_low
+ * Purpose:     Merge the smallest local_n elements in local_A 
+ *              and temp_B into temp_C.  Then copy temp_C
+ *              back into local_A.
+ * In args:     local_n, temp_B
+ * In/out args: local_A
+ * Scratch:     temp_C
+ */
+void Merge_split_low(int local_A[], int temp_B[], int temp_C[], 
+        int local_n) {
+   int ai, bi, ci;
+   
+   ai = 0;
+   bi = 0;
+   ci = 0;
+   while (ci < local_n) {
+      if (local_A[ai] <= temp_B[bi]) {
+         temp_C[ci] = local_A[ai];
+         ci++; ai++;
+      } else {
+         temp_C[ci] = temp_B[bi];
+         ci++; bi++;
+      }
+   }
+
+   // memcpy(local_A, temp_C, local_n*sizeof(int));
+}  /* Merge_split_low */
+
+/*-------------------------------------------------------------------
+ * Function:    Merge_split_high
+ * Purpose:     Merge the largest local_n elements in local_A 
+ *              and temp_B into temp_C.  Then copy temp_C
+ *              back into local_A.
+ * In args:     local_n, temp_B
+ * In/out args: local_A
+ * Scratch:     temp_C
+ */
+void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
+        int local_n) {
+   int ai, bi, ci;
+   
+   ai = local_n-1;
+   bi = local_n-1;
+   ci = local_n-1;
+   while (ci >= 0) {
+      if (local_A[ai] >= temp_B[bi]) {
+         temp_C[ci] = local_A[ai];
+         ci--; ai--;
+      } else {
+         temp_C[ci] = temp_B[bi];
+         ci--; bi--;
+      }
+   }
+
+   // memcpy(local_A, temp_C, local_n*sizeof(int));
+}  /* Merge_split_low */
+
 void* Thread_work(void* rank){
 	long my_rank = (long) rank;
 
@@ -159,7 +239,7 @@ void* Thread_work(void* rank){
 	int stage = 0;
 	int local_n = n/thread_count;
 	int my_head = my_rank * local_n;
-	int my_tail = my_head + local_n - 1;
+	// int my_tail = my_head + local_n - 1;
 	int* swapper = NULL;
 
 	/* Quicksort this thread's own stuff */
@@ -189,11 +269,23 @@ void* Thread_work(void* rank){
 			and_bit <<= 1;
 			stage++;
 			/* Barrier here? */
+			pthread_mutex_lock(&barrier_mutex);
+			barrier_counter++;
+			if (barrier_counter == thread_count){
+				barrier_counter = 0;
+				/* swap pointers */
+				swapper = good_list;
+				good_list = temp_list;
+				temp_list = swapper;
+				pthread_cond_broadcast(&cond_var);
+			} else {
+				while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
+			}
+			pthread_mutex_unlock(&barrier_mutex);
+			/* End of Barrier */
 		}
 		stage_bitmask <<= 1;
 	}
 
-	/* Swap pointers of temp_list and good_list (in the barrier?) */
-
 	return NULL;
-}
+} /* Thread_work */
