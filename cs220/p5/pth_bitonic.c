@@ -47,12 +47,12 @@ void Get_list(){
 	}
 }
 
-void Merge_inc(long my_rank, long partner, int stage){
-	printf("Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", stage, my_rank, partner);
+void Merge_inc(long my_rank, long partner, int stage, unsigned macro_stage){
+	printf("Macro-stage: %d, (sub)Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
 }
 
-void Merge_dec(long my_rank, long partner, int stage){
-	printf("Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", stage, my_rank, partner);
+void Merge_dec(long my_rank, long partner, int stage, unsigned macro_stage){
+	printf("Macro-stage: %d, (sub)Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
 }
 
 int main(int argc, char* argv[]) {
@@ -162,12 +162,9 @@ void* Thread_work(void* rank){
 	int my_tail = my_head + local_n - 1;
 	int* swapper = NULL;
 
-	printf("Th %ld > start qsort, my_head = %d, my_tail = %d\n", my_rank, my_head, my_tail);
-
 	/* Quicksort this thread's own stuff */
 	qsort(good_list + my_head, local_n, sizeof(int), Compare);
 	/* Barrier here */
-	printf("Th %ld > local qsort done \n", my_rank);
 	pthread_mutex_lock(&barrier_mutex);
 	barrier_counter++;
 	if (barrier_counter == thread_count){
@@ -177,20 +174,24 @@ void* Thread_work(void* rank){
 		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
 	}
 	pthread_mutex_unlock(&barrier_mutex);
-	printf("Th %ld > exited barrier \n", my_rank);
 	/* End of Barrier */
 
-	// while (bitmask > 0){
-	// 	partner = my_rank ^ bitmask;
-	// 	if ((my_rank & and_bit) == 0)
-	// 		Merge_inc(my_rank, partner, stage);
-	// 	else
-	// 		Merge_dec(my_rank, partner, stage);
-	// 	bitmask >>= 1;
-	// 	and_bit <<= 1;
-	// 	stage++;
-	// 	/* Barrier here? */
-	// }
+	unsigned stage_bitmask = 1;
+	while (stage_bitmask < thread_count){
+		bitmask = stage_bitmask;
+		while (bitmask > 0){
+			partner = my_rank ^ bitmask;
+			if ((my_rank & and_bit) == 0)
+				Merge_inc(my_rank, partner, stage, stage_bitmask);
+			else
+				Merge_dec(my_rank, partner, stage, stage_bitmask);
+			bitmask >>= 1;
+			and_bit <<= 1;
+			stage++;
+			/* Barrier here? */
+		}
+		stage_bitmask <<= 1;
+	}
 
 	/* Swap pointers of temp_list and good_list (in the barrier?) */
 
