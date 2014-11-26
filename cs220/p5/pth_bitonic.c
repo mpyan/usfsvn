@@ -3,6 +3,8 @@
  *
  * Purpose: sort
  *
+ * Compile: gcc -g -Wall -o pth_bitonic pth_bitonic.c -lpthread
+ *
  */
 
 #include <stdio.h>
@@ -52,7 +54,7 @@ void Get_list(){
 }
 
 void Merge_inc(long my_rank, long partner, int stage, unsigned macro_stage){
-	printf("Macro-stage: %d, (sub)Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
+	// printf("Macro-stage: %d, (sub)Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
 	int local_n = n/thread_count;
 	int my_head = my_rank * local_n;
 	int partner_head = partner * local_n;
@@ -64,7 +66,7 @@ void Merge_inc(long my_rank, long partner, int stage, unsigned macro_stage){
 }
 
 void Merge_dec(long my_rank, long partner, int stage, unsigned macro_stage){
-	printf("Macro-stage: %d, (sub)Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
+	// printf("Macro-stage: %d, (sub)Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
 	int local_n = n/thread_count;
 	int my_head = my_rank * local_n;
 	int partner_head = partner * local_n;
@@ -266,7 +268,6 @@ void* Thread_work(void* rank){
 			else
 				Merge_dec(my_rank, partner, stage, stage_bitmask);
 			bitmask >>= 1;
-			and_bit <<= 1;
 			stage++;
 			/* Barrier here? */
 			pthread_mutex_lock(&barrier_mutex);
@@ -285,6 +286,7 @@ void* Thread_work(void* rank){
 			/* End of Barrier */
 		}
 		stage_bitmask <<= 1;
+		and_bit <<= 1;
 	}
 
 	return NULL;
