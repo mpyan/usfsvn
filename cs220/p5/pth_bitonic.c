@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
 		Get_list();
 	}
 	if (has_o == 1) /* maybe use memcpy here, move this code elsewhere? */
-		Print_list("original: ", good_list);
+		Print_list("Original: ", good_list);
 
 	pthread_mutex_init(&barrier_mutex, NULL);
 	pthread_cond_init(&cond_var, NULL);
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 	printf("Elapsed time = %e seconds\n", finish-start);
 
 	/* Print the list */
-	Print_list("result: ", good_list);
+	Print_list("Result: ", good_list);
 
 	/* Free */
 	pthread_mutex_destroy(&barrier_mutex);
@@ -251,6 +251,9 @@ void* Thread_work(void* rank){
 	barrier_counter++;
 	if (barrier_counter == thread_count){
 		barrier_counter = 0;
+#		ifdef DEBUG
+		Print_list("List after Quicksort: ", good_list);
+#		endif
 		pthread_cond_broadcast(&cond_var);
 	} else {
 		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
@@ -259,8 +262,10 @@ void* Thread_work(void* rank){
 	/* End of Barrier */
 
 	unsigned stage_bitmask = 1;
+	int inner_stage;
 	while (stage_bitmask < thread_count){
 		bitmask = stage_bitmask;
+		inner_stage = 0;
 		while (bitmask > 0){
 			partner = my_rank ^ bitmask;
 			if ((my_rank & and_bit) == 0)
@@ -269,6 +274,7 @@ void* Thread_work(void* rank){
 				Merge_dec(my_rank, partner, stage, stage_bitmask);
 			bitmask >>= 1;
 			stage++;
+			inner_stage++;
 			/* Barrier here? */
 			pthread_mutex_lock(&barrier_mutex);
 			barrier_counter++;
@@ -278,6 +284,11 @@ void* Thread_work(void* rank){
 				swapper = good_list;
 				good_list = temp_list;
 				temp_list = swapper;
+#				ifdef DEBUG
+				printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
+					stage_bitmask*2, inner_stage);
+				Print_list("List: ", good_list);
+#				endif
 				pthread_cond_broadcast(&cond_var);
 			} else {
 				while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
