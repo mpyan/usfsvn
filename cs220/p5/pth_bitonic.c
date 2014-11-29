@@ -17,6 +17,7 @@ const int RMAX = 999999;
 
 int thread_count;
 int n;
+int thread_n;
 int* good_list;
 int* temp_list;
 
@@ -31,6 +32,7 @@ void Merge_split_low(int local_A[], int temp_B[], int temp_C[],
          int local_n);
 void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
         int local_n);
+
 void Print_list(char* text, int list[]){
 	int i;
 	printf("%s", text);
@@ -38,43 +40,58 @@ void Print_list(char* text, int list[]){
 		printf("%d ", list[i]);
 	}
 	printf("\n");
-}
+} /* Print_list */
 void Generate_list(){
 	srandom(1);
 	int i;
 	for (i = 0; i < n; i++){
 		good_list[i] = random() % RMAX;
 	}
-}
+} /* Generate_list */
 void Get_list(){
 	int i;
 	for (i = 0; i < n; i++){
 		scanf("%d", &good_list[i]);
 	}
-}
+} /* Get_list */
 
-void Merge_inc(long my_rank, long partner, int stage, unsigned macro_stage){
-	// printf("Macro-stage: %d, (sub)Stage: %d, Merge_inc > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
-	int local_n = n/thread_count;
-	int my_head = my_rank * local_n;
-	int partner_head = partner * local_n;
+void Merge_inc(long my_rank, long partner){
+	int my_head = my_rank * thread_n;
+	int partner_head = partner * thread_n;
 	if (my_rank < partner){
-		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
 	} else {
-		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
 	}
-}
+} /* Merge_inc */
 
-void Merge_dec(long my_rank, long partner, int stage, unsigned macro_stage){
-	// printf("Macro-stage: %d, (sub)Stage: %d, Merge_dec > my_rank: %ld, partner: %ld\n", macro_stage, stage, my_rank, partner);
-	int local_n = n/thread_count;
-	int my_head = my_rank * local_n;
-	int partner_head = partner * local_n;
+void Merge_dec(long my_rank, long partner){
+	int my_head = my_rank * thread_n;
+	int partner_head = partner * thread_n;
 	if (my_rank > partner){
-		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
 	} else {
-		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, local_n);
+		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
 	}
+} /* Merge_dec */
+
+void Parallel_qsort(int my_head){
+	/* Quicksort this thread's own stuff */
+	qsort(good_list + my_head, thread_n, sizeof(int), Compare);
+	/* Barrier */
+	pthread_mutex_lock(&barrier_mutex);
+	barrier_counter++;
+	if (barrier_counter == thread_count){
+		barrier_counter = 0;
+#		ifdef DEBUG
+		Print_list("List after Quicksort: ", good_list);
+#		endif
+		pthread_cond_broadcast(&cond_var);
+	} else {
+		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
+	}
+	pthread_mutex_unlock(&barrier_mutex);
+	/* End of Barrier */
 }
 
 int main(int argc, char* argv[]) {
@@ -88,6 +105,7 @@ int main(int argc, char* argv[]) {
 	if (argc < 3) Usage(argv[0]);
 	thread_count = strtol(argv[1], NULL, 10);
    	n = strtol(argv[2], NULL, 10);
+   	thread_n = n/thread_count;
    	thread_handles = malloc(thread_count*sizeof(pthread_t));
    	good_list = malloc(n*sizeof(int));
 	temp_list = malloc(n*sizeof(int));
@@ -142,7 +160,7 @@ int main(int argc, char* argv[]) {
 	free(temp_list);
 
 	return 0;
-}
+} /* main */
 
 /*--------------------------------------------------------------------
  * Function:    Usage
@@ -199,8 +217,6 @@ void Merge_split_low(int local_A[], int temp_B[], int temp_C[],
          ci++; bi++;
       }
    }
-
-   // memcpy(local_A, temp_C, local_n*sizeof(int));
 }  /* Merge_split_low */
 
 /*-------------------------------------------------------------------
@@ -228,8 +244,6 @@ void Merge_split_high(int local_A[], int temp_B[], int temp_C[],
          ci--; bi--;
       }
    }
-
-   // memcpy(local_A, temp_C, local_n*sizeof(int));
 }  /* Merge_split_low */
 
 void* Thread_work(void* rank){
@@ -238,28 +252,11 @@ void* Thread_work(void* rank){
 	unsigned bitmask = (unsigned) thread_count >> 1;
 	unsigned and_bit = 2;
 	long partner;
-	int stage = 0;
-	int local_n = n/thread_count;
-	int my_head = my_rank * local_n;
-	// int my_tail = my_head + local_n - 1;
+
+	int my_head = my_rank * thread_n;
 	int* swapper = NULL;
 
-	/* Quicksort this thread's own stuff */
-	qsort(good_list + my_head, local_n, sizeof(int), Compare);
-	/* Barrier here */
-	pthread_mutex_lock(&barrier_mutex);
-	barrier_counter++;
-	if (barrier_counter == thread_count){
-		barrier_counter = 0;
-#		ifdef DEBUG
-		Print_list("List after Quicksort: ", good_list);
-#		endif
-		pthread_cond_broadcast(&cond_var);
-	} else {
-		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
-	}
-	pthread_mutex_unlock(&barrier_mutex);
-	/* End of Barrier */
+	Parallel_qsort(my_head);
 
 	unsigned stage_bitmask = 1;
 	int inner_stage;
@@ -269,13 +266,13 @@ void* Thread_work(void* rank){
 		while (bitmask > 0){
 			partner = my_rank ^ bitmask;
 			if ((my_rank & and_bit) == 0)
-				Merge_inc(my_rank, partner, stage, stage_bitmask);
+				Merge_inc(my_rank, partner);
 			else
-				Merge_dec(my_rank, partner, stage, stage_bitmask);
+				Merge_dec(my_rank, partner);
 			bitmask >>= 1;
-			stage++;
 			inner_stage++;
-			/* Barrier here? */
+
+			/* Barrier */
 			pthread_mutex_lock(&barrier_mutex);
 			barrier_counter++;
 			if (barrier_counter == thread_count){
