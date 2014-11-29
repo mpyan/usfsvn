@@ -1,10 +1,19 @@
 /* File: pth_bitonic.c
  * Author: Mark Yan
  *
- * Purpose: sort
+ * Purpose: Sort a list of integer values using parallel bitonic sort
+ *
+ * Input:   A list of integers
+ * Output:  The list of integers sorted in increasing order
  *
  * Compile: gcc -g -Wall -o pth_bitonic pth_bitonic.c -lpthread
  *
+ *          or to debug,
+ *          gcc -g -Wall -o pth_bitonic pth_bitonic.c -lpthread -DDEBUG
+ *
+ *
+ * Usage:   ./pth_bitonic <thread count> <number of elements> [g] [o]
+ *             'g' and 'o' are optional and can be in either order
  */
 
 #include <stdio.h>
