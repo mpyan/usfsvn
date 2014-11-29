@@ -353,6 +353,15 @@ void Butterfly_barrier(unsigned bitmask, int stage){
 	pthread_mutex_unlock(&barrier_mutex);
 } /* Butterfly_barrier */
 
+/*-------------------------------------------------------------------
+ * Function:       Thread_work
+ * Purpose:        Perform parallel bitonic sort
+ * In arg:         rank
+ * Global in:      thread_count, thread_n
+ * Global in/out:  good_list, temp_list,
+ *                 barrier_mutex, cond_var, barrier_counter
+ * Return val:     Ignored
+ */
 void* Thread_work(void* rank){
 	long my_rank = (long) rank;
 	long partner;
