@@ -39,7 +39,7 @@ void Get_list();
 void Merge_inc(long my_rank, long partner);
 void Merge_dec(long my_rank, long partner);
 void Parallel_qsort(long my_rank);
-void Butterfly_barrier(unsigned stage_bitmask, int inner_stage);
+void Butterfly_barrier(unsigned stage_bitmask, int stage);
 
 int main(int argc, char* argv[]) {
 	long thread;
@@ -128,11 +128,10 @@ int Compare(const void* a_p, const void* b_p) {
 /*-------------------------------------------------------------------
  * Function:    Merge_split_low
  * Purpose:     Merge the smallest local_n elements in local_A 
- *              and temp_B into temp_C.  Then copy temp_C
- *              back into local_A.
+ *              and temp_B into temp_C.
  * In args:     local_n, temp_B
  * In/out args: local_A
- * Scratch:     temp_C
+ * Out args:    temp_C
  */
 void Merge_split_low(int local_A[], int temp_B[], int temp_C[], 
         int local_n) {
@@ -155,11 +154,10 @@ void Merge_split_low(int local_A[], int temp_B[], int temp_C[],
 /*-------------------------------------------------------------------
  * Function:    Merge_split_high
  * Purpose:     Merge the largest local_n elements in local_A 
- *              and temp_B into temp_C.  Then copy temp_C
- *              back into local_A.
+ *              and temp_B into temp_C.
  * In args:     local_n, temp_B
  * In/out args: local_A
- * Scratch:     temp_C
+ * Out args:    temp_C
  */
 void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
         int local_n) {
@@ -179,6 +177,13 @@ void Merge_split_high(int local_A[], int temp_B[], int temp_C[],
    }
 }  /* Merge_split_low */
 
+/*-------------------------------------------------------------------
+ * Function:    Set_args
+ * Purpose:     Determine if the 'g' and 'o' characters are on the
+ *              command line, set corresponding values
+ * In args:     argc, argv
+ * In/out args: has_g, has_o
+ */
 void Set_args(int argc, char* argv[], int* has_g, int* has_o){
 	if (argc > 3){
 		if (strcmp(argv[3], "g") == 0){
@@ -195,6 +200,12 @@ void Set_args(int argc, char* argv[], int* has_g, int* has_o){
 	}
 } /* Set_args */
 
+/*-------------------------------------------------------------------
+ * Function:    Print_list
+ * Purpose:     Print a list
+ * In args:     text: some text to be printed before the list
+ *              list: the list to be printed
+ */
 void Print_list(char* text, int list[]){
 	int i;
 	printf("%s", text);
@@ -204,6 +215,11 @@ void Print_list(char* text, int list[]){
 	printf("\n");
 } /* Print_list */
 
+/*-------------------------------------------------------------------
+ * Function:    Generate_list
+ * Purpose:     Generate random integer values for the shared 
+ *              list "good_list"
+ */
 void Generate_list(){
 	srandom(1);
 	int i;
@@ -212,6 +228,11 @@ void Generate_list(){
 	}
 } /* Generate_list */
 
+/*-------------------------------------------------------------------
+ * Function:    Get_list
+ * Purpose:     Read in integer values from the user for the shared 
+ *              list "good_list"
+ */
 void Get_list(){
 	int i;
 	for (i = 0; i < n; i++){
@@ -219,6 +240,14 @@ void Get_list(){
 	}
 } /* Get_list */
 
+/*-------------------------------------------------------------------
+ * Function:    Merge_inc
+ * Purpose:     Merge the contents of the partner's sublist into
+ *              calling thread's sublist to create
+ *              an increasing sublist
+ * In args:     my_rank: the calling thread's rank
+ *              partner: the rank of the calling thread's partner
+ */
 void Merge_inc(long my_rank, long partner){
 	int my_head = my_rank * thread_n;
 	int partner_head = partner * thread_n;
@@ -231,6 +260,14 @@ void Merge_inc(long my_rank, long partner){
 	}
 } /* Merge_inc */
 
+/*-------------------------------------------------------------------
+ * Function:    Merge_dec
+ * Purpose:     Merge the contents of the partner's sublist into
+ *              calling thread's sublist to create
+ *              a decreasing sublist
+ * In args:     my_rank: the calling thread's rank
+ *              partner: the rank of the calling thread's partner
+ */
 void Merge_dec(long my_rank, long partner){
 	int my_head = my_rank * thread_n;
 	int partner_head = partner * thread_n;
@@ -243,6 +280,12 @@ void Merge_dec(long my_rank, long partner){
 	}
 } /* Merge_dec */
 
+/*-------------------------------------------------------------------
+ * Function:    Parallel_qsort
+ * Purpose:     Sort the elements of the calling thread's sublist
+ *              (using quicksort)
+ * In args:     my_rank: the calling thread's rank
+ */
 void Parallel_qsort(long my_rank){
 	/* Quicksort this thread's own stuff */
 	int my_head = my_rank * thread_n;
@@ -263,7 +306,24 @@ void Parallel_qsort(long my_rank){
 	/* End of Barrier */
 } /* Parallel_qsort */
 
-void Butterfly_barrier(unsigned stage_bitmask, int inner_stage){
+/*-------------------------------------------------------------------
+ * Function:    Butterfly_barrier
+ * Purpose:     Act as a barrier for the butterfly. 
+ *              Swap the pointers of the shared lists
+ *              good_list and temp_list before allowing the
+ *              threads to continue execution.
+ *
+ *              If the DEBUG flag is defined, print out
+ *              which butterfly is being executed,
+ *              which stage of the butterfly has been completed, and
+ *              the contents of the shared, sorted list (good_list)
+ *
+ * In args:     bitmask: the bitmask for the current butterfly
+ *                       to be used to determine which butterfly
+ *                       is being executed
+ *              stage: the completed stage of the current butterfly
+ */
+void Butterfly_barrier(unsigned bitmask, int stage){
 	int* swapper = NULL;
 	pthread_mutex_lock(&barrier_mutex);
 	barrier_counter++;
@@ -275,7 +335,7 @@ void Butterfly_barrier(unsigned stage_bitmask, int inner_stage){
 		temp_list = swapper;
 #		ifdef DEBUG
 		printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
-			stage_bitmask*2, inner_stage);
+			bitmask*2, stage);
 		Print_list("List: ", good_list);
 #		endif
 		pthread_cond_broadcast(&cond_var);
@@ -292,13 +352,13 @@ void* Thread_work(void* rank){
 	unsigned bitmask = (unsigned) thread_count >> 1;
 	unsigned and_bit = 2;
 	unsigned stage_bitmask = 1;
-	int inner_stage;
+	int stage;
 
 	Parallel_qsort(my_rank);
 
 	while (stage_bitmask < thread_count){
 		bitmask = stage_bitmask;
-		inner_stage = 0;
+		stage = 0;
 		while (bitmask > 0){
 			partner = my_rank ^ bitmask;
 			if ((my_rank & and_bit) == 0)
@@ -306,9 +366,9 @@ void* Thread_work(void* rank){
 			else
 				Merge_dec(my_rank, partner);
 			bitmask >>= 1;
-			inner_stage++;
+			stage++;
 
-			Butterfly_barrier(stage_bitmask, inner_stage);
+			Butterfly_barrier(stage_bitmask, stage);
 		}
 		stage_bitmask <<= 1;
 		and_bit <<= 1;
