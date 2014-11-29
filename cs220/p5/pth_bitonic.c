@@ -32,106 +32,14 @@ void Merge_split_low(int local_A[], int temp_B[], int temp_C[],
          int local_n);
 void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
         int local_n);
-
-void Set_args(int argc, char* argv[], int* has_g, int* has_o){
-	if (argc > 3){
-		if (strcmp(argv[3], "g") == 0){
-			*has_g = 1;
-		}
-		else if (strcmp(argv[3], "o") == 0)
-			*has_o = 1;
-		if (argc > 4){
-			if (strcmp(argv[4], "g") == 0)
-				*has_g = 1;
-			else if (strcmp(argv[4], "o") == 0)
-				*has_o = 1;
-		}
-	}
-} /* Set_args */
-
-void Print_list(char* text, int list[]){
-	int i;
-	printf("%s", text);
-	for (i = 0; i < n; i++){
-		printf("%d ", list[i]);
-	}
-	printf("\n");
-} /* Print_list */
-void Generate_list(){
-	srandom(1);
-	int i;
-	for (i = 0; i < n; i++){
-		good_list[i] = random() % RMAX;
-	}
-} /* Generate_list */
-void Get_list(){
-	int i;
-	for (i = 0; i < n; i++){
-		scanf("%d", &good_list[i]);
-	}
-} /* Get_list */
-
-void Merge_inc(long my_rank, long partner){
-	int my_head = my_rank * thread_n;
-	int partner_head = partner * thread_n;
-	if (my_rank < partner){
-		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
-	} else {
-		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
-	}
-} /* Merge_inc */
-
-void Merge_dec(long my_rank, long partner){
-	int my_head = my_rank * thread_n;
-	int partner_head = partner * thread_n;
-	if (my_rank > partner){
-		Merge_split_low(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
-	} else {
-		Merge_split_high(good_list+my_head, good_list+partner_head, temp_list+my_head, thread_n);
-	}
-} /* Merge_dec */
-
-void Parallel_qsort(long my_rank){
-	/* Quicksort this thread's own stuff */
-	int my_head = my_rank * thread_n;
-	qsort(good_list + my_head, thread_n, sizeof(int), Compare);
-	/* Barrier */
-	pthread_mutex_lock(&barrier_mutex);
-	barrier_counter++;
-	if (barrier_counter == thread_count){
-		barrier_counter = 0;
-#		ifdef DEBUG
-		Print_list("List after Quicksort: ", good_list);
-#		endif
-		pthread_cond_broadcast(&cond_var);
-	} else {
-		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
-	}
-	pthread_mutex_unlock(&barrier_mutex);
-	/* End of Barrier */
-} /* Parallel_qsort */
-
-void Butterfly_barrier(unsigned stage_bitmask, int inner_stage){
-	int* swapper = NULL;
-	pthread_mutex_lock(&barrier_mutex);
-	barrier_counter++;
-	if (barrier_counter == thread_count){
-		barrier_counter = 0;
-		/* swap pointers */
-		swapper = good_list;
-		good_list = temp_list;
-		temp_list = swapper;
-#		ifdef DEBUG
-		printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
-			stage_bitmask*2, inner_stage);
-		Print_list("List: ", good_list);
-#		endif
-		pthread_cond_broadcast(&cond_var);
-	} else {
-		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
-	}
-	pthread_mutex_unlock(&barrier_mutex);
-} /* Butterfly_barrier */
+void Set_args(int argc, char* argv[], int* has_g, int* has_o);
+void Print_list(char* text, int list[]);
+void Generate_list();
+void Get_list();
+void Merge_inc(long my_rank, long partner);
+void Merge_dec(long my_rank, long partner);
+void Parallel_qsort(long my_rank);
+void Butterfly_barrier(unsigned stage_bitmask, int inner_stage);
 
 int main(int argc, char* argv[]) {
 	long thread;
@@ -270,6 +178,112 @@ void Merge_split_high(int local_A[], int temp_B[], int temp_C[],
       }
    }
 }  /* Merge_split_low */
+
+void Set_args(int argc, char* argv[], int* has_g, int* has_o){
+	if (argc > 3){
+		if (strcmp(argv[3], "g") == 0){
+			*has_g = 1;
+		}
+		else if (strcmp(argv[3], "o") == 0)
+			*has_o = 1;
+		if (argc > 4){
+			if (strcmp(argv[4], "g") == 0)
+				*has_g = 1;
+			else if (strcmp(argv[4], "o") == 0)
+				*has_o = 1;
+		}
+	}
+} /* Set_args */
+
+void Print_list(char* text, int list[]){
+	int i;
+	printf("%s", text);
+	for (i = 0; i < n; i++){
+		printf("%d ", list[i]);
+	}
+	printf("\n");
+} /* Print_list */
+
+void Generate_list(){
+	srandom(1);
+	int i;
+	for (i = 0; i < n; i++){
+		good_list[i] = random() % RMAX;
+	}
+} /* Generate_list */
+
+void Get_list(){
+	int i;
+	for (i = 0; i < n; i++){
+		scanf("%d", &good_list[i]);
+	}
+} /* Get_list */
+
+void Merge_inc(long my_rank, long partner){
+	int my_head = my_rank * thread_n;
+	int partner_head = partner * thread_n;
+	if (my_rank < partner){
+		Merge_split_low(good_list+my_head, good_list+partner_head, 
+			temp_list+my_head, thread_n);
+	} else {
+		Merge_split_high(good_list+my_head, good_list+partner_head, 
+			temp_list+my_head, thread_n);
+	}
+} /* Merge_inc */
+
+void Merge_dec(long my_rank, long partner){
+	int my_head = my_rank * thread_n;
+	int partner_head = partner * thread_n;
+	if (my_rank > partner){
+		Merge_split_low(good_list+my_head, good_list+partner_head, 
+			temp_list+my_head, thread_n);
+	} else {
+		Merge_split_high(good_list+my_head, good_list+partner_head, 
+			temp_list+my_head, thread_n);
+	}
+} /* Merge_dec */
+
+void Parallel_qsort(long my_rank){
+	/* Quicksort this thread's own stuff */
+	int my_head = my_rank * thread_n;
+	qsort(good_list + my_head, thread_n, sizeof(int), Compare);
+	/* Barrier */
+	pthread_mutex_lock(&barrier_mutex);
+	barrier_counter++;
+	if (barrier_counter == thread_count){
+		barrier_counter = 0;
+#		ifdef DEBUG
+		Print_list("List after Quicksort: ", good_list);
+#		endif
+		pthread_cond_broadcast(&cond_var);
+	} else {
+		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
+	}
+	pthread_mutex_unlock(&barrier_mutex);
+	/* End of Barrier */
+} /* Parallel_qsort */
+
+void Butterfly_barrier(unsigned stage_bitmask, int inner_stage){
+	int* swapper = NULL;
+	pthread_mutex_lock(&barrier_mutex);
+	barrier_counter++;
+	if (barrier_counter == thread_count){
+		barrier_counter = 0;
+		/* swap pointers */
+		swapper = good_list;
+		good_list = temp_list;
+		temp_list = swapper;
+#		ifdef DEBUG
+		printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
+			stage_bitmask*2, inner_stage);
+		Print_list("List: ", good_list);
+#		endif
+		pthread_cond_broadcast(&cond_var);
+	} else {
+		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
+	}
+	pthread_mutex_unlock(&barrier_mutex);
+} /* Butterfly_barrier */
 
 void* Thread_work(void* rank){
 	long my_rank = (long) rank;
