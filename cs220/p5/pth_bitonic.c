@@ -101,9 +101,8 @@ int main(int argc, char* argv[]) {
  * In arg:      prog_name
  */
 void Usage(char* prog_name) {
-
-   fprintf(stderr, "usage: %s <thread count> <number of random vals per thread>\n", 
-         prog_name);
+   fprintf(stderr, "usage: %s <thread count> <number of elements> [g] [o]\n", 
+        prog_name);
    exit(0);
 }  /* Usage */
 
