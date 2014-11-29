@@ -33,6 +33,22 @@ void Merge_split_low(int local_A[], int temp_B[], int temp_C[],
 void Merge_split_high(int local_A[], int temp_B[], int temp_C[], 
         int local_n);
 
+void Set_args(int argc, char* argv[], int* has_g, int* has_o){
+	if (argc > 3){
+		if (strcmp(argv[3], "g") == 0){
+			*has_g = 1;
+		}
+		else if (strcmp(argv[3], "o") == 0)
+			*has_o = 1;
+		if (argc > 4){
+			if (strcmp(argv[4], "g") == 0)
+				*has_g = 1;
+			else if (strcmp(argv[4], "o") == 0)
+				*has_o = 1;
+		}
+	}
+} /* Set_args */
+
 void Print_list(char* text, int list[]){
 	int i;
 	printf("%s", text);
@@ -75,8 +91,9 @@ void Merge_dec(long my_rank, long partner){
 	}
 } /* Merge_dec */
 
-void Parallel_qsort(int my_head){
+void Parallel_qsort(long my_rank){
 	/* Quicksort this thread's own stuff */
+	int my_head = my_rank * thread_n;
 	qsort(good_list + my_head, thread_n, sizeof(int), Compare);
 	/* Barrier */
 	pthread_mutex_lock(&barrier_mutex);
@@ -92,7 +109,29 @@ void Parallel_qsort(int my_head){
 	}
 	pthread_mutex_unlock(&barrier_mutex);
 	/* End of Barrier */
-}
+} /* Parallel_qsort */
+
+void Butterfly_barrier(unsigned stage_bitmask, int inner_stage){
+	int* swapper = NULL;
+	pthread_mutex_lock(&barrier_mutex);
+	barrier_counter++;
+	if (barrier_counter == thread_count){
+		barrier_counter = 0;
+		/* swap pointers */
+		swapper = good_list;
+		good_list = temp_list;
+		temp_list = swapper;
+#		ifdef DEBUG
+		printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
+			stage_bitmask*2, inner_stage);
+		Print_list("List: ", good_list);
+#		endif
+		pthread_cond_broadcast(&cond_var);
+	} else {
+		while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
+	}
+	pthread_mutex_unlock(&barrier_mutex);
+} /* Butterfly_barrier */
 
 int main(int argc, char* argv[]) {
 	long thread;
@@ -110,29 +149,15 @@ int main(int argc, char* argv[]) {
    	good_list = malloc(n*sizeof(int));
 	temp_list = malloc(n*sizeof(int));
 
-	if (argc > 3){
-		if (strcmp(argv[3], "g") == 0){
-			has_g = 1;
-		}
-		else if (strcmp(argv[3], "o") == 0)
-			has_o = 1;
-		if (argc > 4){
-			if (strcmp(argv[4], "g") == 0)
-				has_g = 1;
-			else if (strcmp(argv[4], "o") == 0)
-				has_o = 1;
-		}
-	}
+	Set_args(argc, argv, &has_g, &has_o);
 
 	/* Create the shared list */
-	if (has_g == 1){
-		/* generate list */
+	if (has_g == 1)
 		Generate_list();
-	} else {
-		/* read in the list from stdin */
+	else
 		Get_list();
-	}
-	if (has_o == 1) /* maybe use memcpy here, move this code elsewhere? */
+
+	if (has_o == 1)
 		Print_list("Original: ", good_list);
 
 	pthread_mutex_init(&barrier_mutex, NULL);
@@ -248,18 +273,15 @@ void Merge_split_high(int local_A[], int temp_B[], int temp_C[],
 
 void* Thread_work(void* rank){
 	long my_rank = (long) rank;
+	long partner;
 
 	unsigned bitmask = (unsigned) thread_count >> 1;
 	unsigned and_bit = 2;
-	long partner;
-
-	int my_head = my_rank * thread_n;
-	int* swapper = NULL;
-
-	Parallel_qsort(my_head);
-
 	unsigned stage_bitmask = 1;
 	int inner_stage;
+
+	Parallel_qsort(my_rank);
+
 	while (stage_bitmask < thread_count){
 		bitmask = stage_bitmask;
 		inner_stage = 0;
@@ -272,26 +294,7 @@ void* Thread_work(void* rank){
 			bitmask >>= 1;
 			inner_stage++;
 
-			/* Barrier */
-			pthread_mutex_lock(&barrier_mutex);
-			barrier_counter++;
-			if (barrier_counter == thread_count){
-				barrier_counter = 0;
-				/* swap pointers */
-				swapper = good_list;
-				good_list = temp_list;
-				temp_list = swapper;
-#				ifdef DEBUG
-				printf("Butterfly: %d-thread butterfly, Stage: %d, ", 
-					stage_bitmask*2, inner_stage);
-				Print_list("List: ", good_list);
-#				endif
-				pthread_cond_broadcast(&cond_var);
-			} else {
-				while (pthread_cond_wait(&cond_var, &barrier_mutex) != 0);
-			}
-			pthread_mutex_unlock(&barrier_mutex);
-			/* End of Barrier */
+			Butterfly_barrier(stage_bitmask, inner_stage);
 		}
 		stage_bitmask <<= 1;
 		and_bit <<= 1;
